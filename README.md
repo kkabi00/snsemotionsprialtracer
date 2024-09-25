@@ -1,3 +1,15 @@
+실행법 
+nodejs, npm 설치가 완료되었다는 가정 하에
+
+1. npm install
+2. npm run start
+   명령어 실행 후 나오는 port 번호를 
+  localhost:port 입력 (로컬 서버) 
+3. npm run dev
+  개발 모드 : 코드 변경시 바로 적용되는 것
+  추가 삭제 시 요걸로 
+
+
 # Note
 
 This is a fork of the original [Flowbite Admin Dashboard](https://github.com/themesberg/flowbite-admin-dashboard) repository. This fork is used to create a NodeJS version of the dashboard using [Express](https://expressjs.com/) and [EJS](https://ejs.co/) as the templating engine.
