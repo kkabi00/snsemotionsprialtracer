@@ -59,7 +59,6 @@ def extract_video_id(url):
     return match.group(1) if match else None
 
 # 유튭 v id -> script data 스크랩
-  # 사용자 생성 자막 없는 경우, 자동 생성 자막으로 들어옴
 def fetch_youtube_script(video_id):
     try:
         transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['ko'])
