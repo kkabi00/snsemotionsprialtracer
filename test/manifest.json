@@ -1,19 +1,21 @@
 {
-    "manifest_version": 3,
-    "name": "SNS Emotion Sprial Tracer",
-    "version": "1.0",
-    "permissions": ["activeTab", "scripting"],
-    "background": {
-      "service_worker": "scripts/background.js"
-    },
-    "content_scripts": [
-      {
-        "matches": ["https://www.youtube.com/*"],
-        "js": ["scripts/content.js"]
-      }
-    ],
-    "action": {
-      "default_popup": "popup.html"
+  "manifest_version": 3,
+  "name": "SNS Emotion Spiral Tracer",
+  "version": "1.0",
+  "permissions": [
+    "activeTab", 
+    "scripting"
+  ],
+  "background": {
+    "service_worker": "scripts/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/*"],
+      "js": ["scripts/content.js"]
     }
+  ],
+  "action": {
+    "default_popup": "popup.html"
   }
-  
+}
