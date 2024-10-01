@@ -19,6 +19,7 @@ risk_scores = {
     'Disgust': 4.0, 'Embarrassment': 4.2, 'Fear': 4.5, 'Grief': 4.5, 'Nervousness': 4.0,
     'Remorse': 3.5, 'Sadness': 4.0
 }
+
 def save_to_database(data, video_id):
     """문장별 감정 분석 결과를 SQLite DB에 저장."""
     conn = sqlite3.connect(DB_FILE)
@@ -166,6 +167,8 @@ def main():
             scores_list = [f"{score:.2f}" for score in aggregated_scores.values()]
             over_half_scores_list = [str(over_half_scores[emotion]) for emotion in emotions_list]
 
+#여기 아래 부분 부터 로직만 수정해주시면 됩니다요
+  # 문장 단위로 { 감정 대치(위에 딕셔너리) + 또 다른 감정들에 대한 대치값... }
             # 위험지수 합계 계산
             risk_score_sum = sum(risk_scores.get(emotion, 1.0) * over_half_scores[emotion] for emotion in emotions_list)
 
@@ -193,7 +196,6 @@ def main():
         display_results(video_id)
     else:
         print("이 비디오에는 자막이 없습니다.")
-
 
 if __name__ == "__main__":
     main()
