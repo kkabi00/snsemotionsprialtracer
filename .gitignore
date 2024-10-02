@@ -1,7 +1,3 @@
-node_modules/
-static/*.js
-static/*.css
-static/*.map
-.venv
-.DS_Store
-app.bundle.js.LICENSE.txt
+.venv/
+__pycache__/
+.vscode/
