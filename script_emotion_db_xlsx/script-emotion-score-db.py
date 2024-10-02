@@ -24,7 +24,7 @@ def save_to_database(data, video_id):
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     
-    #테이블 존재X -> 생성
+    #테이블 존재X -> 생성 # 감정별 위험지수 열 추가
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS emotion_analysis (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -32,7 +32,7 @@ def save_to_database(data, video_id):
             sentence TEXT,
             emotions TEXT,
             scores TEXT,
-            emotion_risk_scores TEXT,  # 감정별 위험지수 열 추가
+            emotion_risk_scores TEXT,  
             elapsed_time_ms REAL,
             over_half_score TEXT,
             risk_score_sum REAL
@@ -54,6 +54,8 @@ def save_to_database(data, video_id):
 def extract_video_id(url):
     if 'youtu.be' in url:
         match = re.search(r"youtu\.be/([^#\&\?]+)", url)
+    elif 'youtube.com/shorts/' in url:  # shorts URL 패턴 추가
+        match = re.search(r"youtube\.com/shorts/([^#\&\?]+)", url)
     else:
         match = re.search(r"v=([^#\&\?]+)", url)
     return match.group(1) if match else None

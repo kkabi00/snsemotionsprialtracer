@@ -24,6 +24,8 @@ risk_scores = {
 def extract_video_id(url):
     if 'youtu.be' in url:
         match = re.search(r"youtu\.be/([^#\&\?]+)", url)
+    elif 'youtube.com/shorts/' in url:  # shorts URL 패턴 추가
+        match = re.search(r"youtube\.com/shorts/([^#\&\?]+)", url)
     else:
         match = re.search(r"v=([^#\&\?]+)", url)
     return match.group(1) if match else None
