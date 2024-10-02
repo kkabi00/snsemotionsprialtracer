@@ -7,6 +7,7 @@ SNS Emotion Sprial Tracer
   <br/>pip install SpeechRecognition
   <br/>pip install yt-dlp
   <br/>pip install youtube_transcript_api
+  
 - web 크롬 확장프로그램 테스트법 
 
 1. 확장프로그램 페이지에서 오른쪽 상단 메뉴 클릭
