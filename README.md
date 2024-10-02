@@ -15,8 +15,7 @@ SNS Emotion Sprial Tracer
 4. 페이지 상단 확장프로그램 실행
 
 - flask 서버 실행
-  
-flask run
+<br/>flask run
 
 10/01
 웹 친화적으로 확장프로그램 내에서 그래프를 생성하도록 했는데
