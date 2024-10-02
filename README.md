@@ -7,6 +7,9 @@ SNS Emotion Sprial Tracer
   <br/>pip install SpeechRecognition
   <br/>pip install yt-dlp
   <br/>pip install youtube_transcript_api
+  <br/>pip install transformers
+  <br/>pip install pydub
+
   
 - web 크롬 확장프로그램 테스트법 
 
