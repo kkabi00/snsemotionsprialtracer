@@ -4,7 +4,8 @@
   "version": "1.0",
   "permissions": [
     "activeTab", 
-    "scripting"
+    "scripting",
+    "http://localhost:5000/"
   ],
   "background": {
     "service_worker": "scripts/background.js"

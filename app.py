@@ -34,6 +34,8 @@ def extract_video_id(url):
         match = re.search(r"v=([^#\&\?]+)", url)
     return match.group(1) if match else None
 
+
+
 # 유튜브 자막 가져오기
 def fetch_youtube_script(video_id):
     try:
@@ -101,8 +103,9 @@ def save_to_database(data, video_id):
 # API 엔드포인트
 @app.route('/analyze', methods=['POST'])
 def analyze():
-    youtube_url = request.json.get('youtube_url')
-    video_id = extract_video_id(youtube_url)
+    data = request.json
+
+    video_id = extract_video_id(data.get('youtube_url'))
 
     if video_id is None:
         return jsonify({'error': 'Invalid YouTube URL'}), 400
@@ -114,6 +117,7 @@ def analyze():
     sentences = split_into_sentences(script)
     analysis_data = []
     for sentence in sentences:
+        print(f"\nAnalyzing sentence: {sentence}")
         start_time = time.time()
         results = emotion_analysis(sentence)
         elapsed_time = time.time() - start_time

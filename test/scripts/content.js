@@ -4,10 +4,55 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendUrlToServer(message.videoUrl);
     }
 });
+// 유튜브 영상 클릭을 감지하는 함수
+function detectVideoClick() {
+    const videoPlayer = document.querySelector('video');
+
+    if (videoPlayer) {
+        videoPlayer.addEventListener('click', function() {
+            const videoId = getVideoId();
+            if (videoId) {
+                sendVideoIdToServer(videoId);
+            }
+        });
+    }
+}
+
+// URL에서 영상 ID 추출하는 함수
+function getVideoId() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('v');  // 유튜브 영상 ID는 'v'라는 쿼리 파라미터에 있음
+}
+
+// Flask 서버로 영상 ID를 보내는 함수
+function sendVideoIdToServer(videoId) {
+    fetch('http://localhost:5000/analyze', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ video_id: videoId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('서버로부터 응답:', data);
+    })
+    .catch(error => {
+        console.error('영상 ID 전송 중 오류 발생:', error);
+    });
+}
+
+// 페이지가 로드되면 영상 클릭 감지 함수 호출
+window.addEventListener('load', () => {
+    detectVideoClick();
+});
+
+/*
 function getVideoInfo() {
     const videoUrl = window.location.href;
     return { videoUrl: videoUrl };
 }
+
 // URL이 변경될 때마다 메시지를 확장 프로그램에 보내기
 function monitorUrlChange() {
     let lastUrl = window.location.href;
@@ -60,7 +105,7 @@ function sendUrlToServer(youtubeUrl) {
         console.error('Error:', error);
         alert('Request failed: ' + error);
     });
-}
+}*/
 
 // 서버로부터 분석 데이터를 받아 차트를 그리는 함수
 function drawChart(analysisData) {
