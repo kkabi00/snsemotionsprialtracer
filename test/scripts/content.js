@@ -47,6 +47,44 @@ window.addEventListener('load', () => {
     detectVideoClick();
 });
 
+// 유튜브 영상 페이지 변경 감지 함수
+function detectVideoPause() {
+    const videoPlayer = document.querySelector('video');
+
+    if (videoPlayer) {
+
+        // 유튜브 페이지에서 나가는 것을 감지 (탭 닫기, 페이지 변경 등)
+        window.addEventListener('beforeunload', function() {
+            console.log('페이지가 닫히거나 이동됨');
+            sendStopSignalToServer();
+        });
+    }
+}
+
+// 서버에 영상 중지 신호 보내는 함수
+function sendStopSignalToServer() {
+    const videoId = getVideoId();  // 현재 URL에서 video_id를 다시 가져옴
+    fetch('http://localhost:5000/stop_analysis', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ message: 'stop', video_id: videoId })  // video_id를 JSON으로 함께 보냄
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('서버로부터 중지 신호 응답:', data);
+    })
+    .catch(error => {
+        console.error('중지 신호 전송 중 오류 발생:', error);
+    });
+}
+
+window.addEventListener('load', () => {
+    detectVideoClick();
+    detectVideoPause();  // 영상 일시 중지 및 페이지 이동 감지
+});
+
 /*
 function getVideoInfo() {
     const videoUrl = window.location.href;

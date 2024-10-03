@@ -26,6 +26,9 @@ risk_scores = {
     'Remorse': 3.5, 'Sadness': 4.0
 }
 
+# 중지 플래그를 저장할 딕셔너리 (video_id별로 중지 여부 저장)
+stop_flags = {}
+
 # 유튜브 URL에서 video ID 추출
 def extract_video_id(url):
     if 'youtu.be' in url:
@@ -77,6 +80,7 @@ def aggregate_emotion_scores(results):
 def save_to_database(data, video_id):
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
+    print("db save")
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS emotion_analysis (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -96,9 +100,10 @@ def save_to_database(data, video_id):
             INSERT INTO emotion_analysis (video_id, sentence, emotions, scores, emotion_risk_scores, elapsed_time_ms, over_half_score, risk_score_sum)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (video_id, row['sentence'], row['emotions'], row['scores'], row['emotion_risk_scores'], row['elapsed_time_ms'], row['over_half_score'], row['risk_score_sum']))
-
+    print("db save end")
     conn.commit()
     conn.close()
+
 
 # API 엔드포인트
 @app.route('/analyze', methods=['POST'])
@@ -110,6 +115,9 @@ def analyze():
     if video_id is None:
         return jsonify({'error': 'Invalid YouTube URL'}), 400
 
+    # 중단 플래그 초기화
+    stop_flags[video_id] = False
+
     script = fetch_youtube_script(video_id)
     if not script:
         return jsonify({'error': 'Could not fetch transcript'}), 500
@@ -117,10 +125,15 @@ def analyze():
     sentences = split_into_sentences(script)
     analysis_data = []
     for sentence in sentences:
-        print(f"\nAnalyzing sentence: {sentence}")
+        print(stop_flags)
+        if stop_flags.get(video_id):
+            print(f"Analysis for video {video_id} has been stopped.")
+            break  # 루프 중단
+
         start_time = time.time()
         results = emotion_analysis(sentence)
         elapsed_time = time.time() - start_time
+        print(elapsed_time)
         elapsed_time_ms = round(elapsed_time * 1000, 2)
 
         aggregated_scores, over_half_scores = aggregate_emotion_scores(results)
@@ -131,17 +144,32 @@ def analyze():
         emotion_risk_scores_list = [f"{risk_scores.get(emotion, 1.0):.1f}" for emotion in emotions_list]
 
         analysis_data.append({
-            'sentence': sentence,
-            'emotions': ', '.join(emotions_list),
-            'scores': ', '.join(scores_list),
-            'elapsed_time_ms': elapsed_time_ms,
-            'over_half_score': ', '.join(over_half_scores_list),
-            'risk_score_sum': round(risk_score_sum, 2),
-            'emotion_risk_scores': ', '.join(emotion_risk_scores_list)
-        })
+        'sentence': sentence,
+        'emotions': ', '.join(emotions_list),
+        'scores': ', '.join(scores_list),
+        'elapsed_time_ms': elapsed_time_ms,
+        'over_half_score': ', '.join(over_half_scores_list),
+        'risk_score_sum': round(risk_score_sum, 2),
+        'emotion_risk_scores': ', '.join(emotion_risk_scores_list)
+    }
+)
 
     save_to_database(analysis_data, video_id)
     return jsonify({'video_id': video_id, 'analysis_data': analysis_data}), 200
+
+# 중지 요청을 처리하는 엔드포인트
+@app.route('/stop_analysis', methods=['POST'])
+def stop_analysis():
+    data = request.json
+    message = data.get('message')
+    video_id = data.get('video_id')  # JSON 본문에서 video_id를 추출
+
+    if message == 'stop' and video_id:
+        # 중지 플래그 설정
+        stop_flags[video_id] = True
+        return jsonify({'status': f'Analysis stopped for video {video_id}'}), 200
+
+    return jsonify({'error': 'Invalid stop signal or missing video_id'}), 400
 
 # 서버 실행
 if __name__ == '__main__':
