@@ -14,7 +14,6 @@ import re
 app = Flask(__name__)
 CORS(app) # 모든 출처에 대해 CORS 허용 (보안 문제가 생길지도... 나중에 빼기)
 DB_FILE = "emotion_analysis_results.db"
-
 # 감정 위험 점수 정의
 risk_scores = {
     'Admiration': 1.0, 'Amusement': 1.0, 'Approval': 1.2, 'Caring': 1.2, 'Curiosity': 1.2,
@@ -28,11 +27,14 @@ risk_scores = {
 
 # 유튜브 URL에서 video ID 추출
 def extract_video_id(url):
-    if 'youtu.be' in url:
-        match = re.search(r"youtu\.be/([^#\&\?]+)", url)
-    else:
-        match = re.search(r"v=([^#\&\?]+)", url)
-    return match.group(1) if match else None
+    try:
+        if 'youtu.be' in url:
+            match = re.search(r"youtu\.be/([^#\&\?]+)", url)
+        else:
+            match = re.search(r"v=([^#\&\?]+)", url)
+        return match.group(1) if match else None
+    except Exception as e:
+        return None
 
 # 유튜브 자막 가져오기
 def fetch_youtube_script(video_id):
@@ -40,6 +42,7 @@ def fetch_youtube_script(video_id):
         transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['ko'])
         return ' '.join([item['text'] for item in transcript])
     except Exception as e:
+        print(e)
         return None
 
 # 감정 분석 실행
@@ -103,6 +106,7 @@ def save_to_database(data, video_id):
 def analyze():
     youtube_url = request.json.get('youtube_url')
     video_id = extract_video_id(youtube_url)
+    print(f'Received URL: {youtube_url}')
 
     if video_id is None:
         return jsonify({'error': 'Invalid YouTube URL'}), 400
@@ -110,7 +114,6 @@ def analyze():
     script = fetch_youtube_script(video_id)
     if not script:
         return jsonify({'error': 'Could not fetch transcript'}), 500
-
     sentences = split_into_sentences(script)
     analysis_data = []
     for sentence in sentences:
@@ -118,7 +121,7 @@ def analyze():
         results = emotion_analysis(sentence)
         elapsed_time = time.time() - start_time
         elapsed_time_ms = round(elapsed_time * 1000, 2)
-
+        print(sentence)
         aggregated_scores, over_half_scores = aggregate_emotion_scores(results)
         emotions_list = list(aggregated_scores.keys())
         scores_list = [f"{score:.2f}" for score in aggregated_scores.values()]

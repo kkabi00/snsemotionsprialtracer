@@ -1,67 +1,17 @@
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.videoUrl) {
-        // Flask 서버로 URL을 전송
-        sendUrlToServer(message.videoUrl);
+// 차트 캔버스를 추가하는 함수
+function addChartCanvas() {
+    const existingCanvas = document.getElementById('emotionChart');
+    if (!existingCanvas) {
+        const canvas = document.createElement('canvas');
+        canvas.id = 'emotionChart';
+        canvas.style.position = 'fixed';
+        canvas.style.bottom = '10px';
+        canvas.style.right = '10px';
+        canvas.style.width = '400px';
+        canvas.style.height = '300px';
+        document.body.appendChild(canvas);
     }
-});
-function getVideoInfo() {
-    const videoUrl = window.location.href;
-    return { videoUrl: videoUrl };
 }
-// URL이 변경될 때마다 메시지를 확장 프로그램에 보내기
-function monitorUrlChange() {
-    let lastUrl = window.location.href;
-
-    const observer = new MutationObserver(() => {
-        const currentUrl = window.location.href;
-        if (currentUrl !== lastUrl) {
-            lastUrl = currentUrl;
-            if (currentUrl.includes('watch?v=')) {
-                const videoInfo = getVideoInfo();  // getVideoInfo 호출
-                chrome.runtime.sendMessage(videoInfo);  // URL 정보 전송
-            }
-        }
-    });
-
-    // DOM 변화를 감지하기 위한 옵저버 설정
-    observer.observe(document.body, { childList: true, subtree: true });
-}
-
-// 처음 로드될 때 URL 체크
-if (window.location.href.includes('watch?v=')) {
-    const videoInfo = getVideoInfo();  // getVideoInfo 호출
-    chrome.runtime.sendMessage(videoInfo);  // URL 정보 전송
-}
-
-// URL 변경 모니터링 시작
-monitorUrlChange();
-
-function sendUrlToServer(youtubeUrl) {
-    fetch('http://localhost:5000/analyze', {  // Flask 서버의 엔드포인트로 URL 전송
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ youtube_url: youtubeUrl })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.analysis_data) {
-            // 분석 데이터를 content script로 전송하여 차트를 그리게 함
-            chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-                chrome.tabs.sendMessage(tabs[0].id, { analysis_data: data.analysis_data });
-            });
-        } else {
-            console.error('Error:', data.error);
-            alert('Error occurred: ' + data.error);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Request failed: ' + error);
-    });
-}
-
 // 서버로부터 분석 데이터를 받아 차트를 그리는 함수
 function drawChart(analysisData) {
     const ctx = document.getElementById('emotionChart').getContext('2d');
@@ -111,19 +61,45 @@ function drawChart(analysisData) {
     });
 }
 
-// 차트 캔버스를 추가하는 함수
-function addChartCanvas() {
-    const existingCanvas = document.getElementById('emotionChart');
-    if (!existingCanvas) {
-        const canvas = document.createElement('canvas');
-        canvas.id = 'emotionChart';
-        canvas.style.position = 'fixed';
-        canvas.style.bottom = '10px';
-        canvas.style.right = '10px';
-        canvas.style.width = '400px';
-        canvas.style.height = '300px';
-        document.body.appendChild(canvas);
-    }
+function getVideoInfo() {
+    const videoUrl = window.location.href;
+    return { videoUrl: videoUrl };
+}
+
+// URL이 변경될 때마다 메시지를 확장 프로그램에 보내기
+function monitorUrlChange() {
+    let lastUrl = window.location.href;
+
+    const observer = new MutationObserver(() => {
+        const currentUrl = window.location.href;
+        // URL이 바뀌었고, 유튜브 홈이나 피드, 검색 페이지가 아닌 경우에만 실행
+        if (currentUrl !== lastUrl) {
+            lastUrl = currentUrl;
+
+            // 유튜브 비디오 페이지로 이동할 때만 URL 전송
+            if (currentUrl.includes('watch?v=') && !isYouTubeHomePage(currentUrl)) {
+                const videoInfo = getVideoInfo();  // getVideoInfo 호출
+                chrome.runtime.sendMessage(videoInfo);  // URL 정보 전송
+            }
+        }
+    });
+    // DOM 변화를 감지하기 위한 옵저버 설정
+    observer.observe(document.body, { childList: true, subtree: true });
+}
+function isYouTubeHomePage(url) {
+    // 유튜브 홈, 구독 피드, 검색, 피드 등을 필터링
+    const homePatterns = [
+        'youtube.com/',                // 유튜브 홈
+        'youtube.com/feed',             // 구독 피드
+        'youtube.com/results',          // 검색 결과
+        'youtube.com/shorts'            // Shorts 페이지
+    ];
+    return homePatterns.some(pattern => url.includes(pattern));
+}
+// 처음 로드될 때 URL 체크
+if (window.location.href.includes('watch?v=')) {
+    const videoInfo = getVideoInfo();  // getVideoInfo 호출
+    chrome.runtime.sendMessage(videoInfo);  // URL 정보 전송
 }
 
 // 메시지를 받을 때 차트 그리기
@@ -133,3 +109,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         drawChart(message.analysis_data);  // 차트 그리기
     }
 });
+
+// URL 변경 모니터링 시작
+monitorUrlChange();

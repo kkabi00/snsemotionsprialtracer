@@ -1,0 +1,11 @@
+Flask
+Flask-CORS
+sqlite3
+pandas
+youtube-transcript-api
+transformers
+kiwipiepy
+pydub
+speechrecognition
+yt-dlp
+re
