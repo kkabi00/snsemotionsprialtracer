@@ -13,7 +13,12 @@ function sendUrlToServer(youtubeUrl) {
         },
         body: JSON.stringify({ youtube_url: youtubeUrl })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.analysis_data) {
             // 분석 데이터를 content script로 전송하여 차트를 그리게 함
