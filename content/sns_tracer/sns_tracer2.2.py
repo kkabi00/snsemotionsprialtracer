@@ -85,22 +85,40 @@ def load_cumulative_data():
     else:
         return 0, 0  # 초기값
 
-def save_cumulative_data(sum_danger_score, elapsed_time):
-    """현재 비디오의 누적 데이터를 파일에 저장합니다."""
-    data = pd.DataFrame([{'sum_danger_score': sum_danger_score, 'elapsed_time': elapsed_time}])
+def save_cumulative_data(sum_danger_score, elapsed_time, video_id, addiction_rate):
+    """현재 비디오의 누적 데이터를 파일에 저장하며, 영상 ID와 중독율을 100분율로 추가."""
+    # addiction_rate를 100분율로 변환
+    addiction_rate_percentage = addiction_rate * 100
+    
+    # 이전 데이터 불러오기
+    _, last_elapsed_time = load_cumulative_data()
+    
+    # 누적된 elapsed_time 계산
+    total_elapsed_time = last_elapsed_time + elapsed_time
+    
+    data = pd.DataFrame([{
+        'video_id': video_id,
+        'sum_danger_score': sum_danger_score,
+        'elapsed_time': total_elapsed_time,
+        'addiction_rate': f"{addiction_rate_percentage:.2f}%"  # 100분율로 표현
+    }])
     if os.path.exists(CUMULATIVE_DATA_FILE):
         data.to_csv(CUMULATIVE_DATA_FILE, mode='a', header=False, index=False)
     else:
         data.to_csv(CUMULATIVE_DATA_FILE, index=False)
 
-def plot_danger_score_over_time(df):
-    """누적된 danger_score를 시각화하는 꺾은선 그래프를 그립니다."""
+def plot_sum_danger_score_over_time(df):
+    """시간에 따른 sum_danger_score를 시각화하는 꺾은선 그래프를 그립니다."""
     plt.figure(figsize=(12, 6))
-    plt.plot(df['start_time'], df['sum_danger_score'], marker='o', linestyle='-')
-    plt.title('Cumulative Danger Score Over Time')
-    plt.xlabel('Time (s)')
+    
+    # x축은 elapsed_time, y축은 sum_danger_score
+    plt.plot(df['elapsed_time'].cumsum(), df['sum_danger_score'], marker='o', linestyle='-')
+    
+    plt.title('Sum Danger Score Over Elapsed Time')
+    plt.xlabel('Elapsed Time (s)')
     plt.ylabel('Sum Danger Score')
     plt.grid(True)
+    plt.tight_layout()  # 레이아웃 조정
     plt.show()
 
 def save_to_excel(analysis_data, video_id):
@@ -115,6 +133,25 @@ def save_to_excel(analysis_data, video_id):
 
     print(f"\n엑셀 파일로 저장 완료: {excel_filename}")
 
+def plot_cumulative_sum_danger_score():
+    """누적된 전체 sum_danger_score를 시각화하는 꺾은선 그래프를 그립니다."""
+    if os.path.exists(CUMULATIVE_DATA_FILE):
+        df = pd.read_csv(CUMULATIVE_DATA_FILE)
+        
+        # 누적된 sum_danger_score를 계산하여 시각화
+        df['cumulative_sum_danger_score'] = df['sum_danger_score'].cumsum()
+        
+        plt.figure(figsize=(12, 6))
+        plt.plot(df['elapsed_time'].cumsum(), df['cumulative_sum_danger_score'], marker='o', linestyle='-')
+        plt.title('Overall Cumulative Sum Danger Score Over Elapsed Time')
+        plt.xlabel('Elapsed Time (s)')
+        plt.ylabel('Cumulative Sum Danger Score')
+        plt.grid(True)
+        plt.tight_layout()  # 레이아웃 조정
+        plt.show()
+    else:
+        print("누적 데이터를 찾을 수 없습니다. 분석된 데이터가 없습니다.")
+
 def main():
     # 이전 비디오의 누적 데이터 로드
     cumulative_sum_danger_score, cumulative_elapsed_time = load_cumulative_data()
@@ -122,7 +159,8 @@ def main():
     while True:
         youtube_url = input("YouTube URL 입력 (종료하려면 'exit' 입력): ")
         if youtube_url.lower() == 'exit':
-            print("프로그램을 종료합니다.")
+            print("프로그램을 종료하고 누적 데이터를 시각화합니다.")
+            plot_cumulative_sum_danger_score()  # 종료 시 누적 데이터 시각화
             break
 
         video_id = extract_video_id(youtube_url)
@@ -135,9 +173,11 @@ def main():
         if transcript:
             # 1. 자막 데이터를 문장 단위로 나누기
             sentences = split_into_sentences(' '.join([item['text'] for item in transcript]))
+            total_video_time = sum(item['start'] for item in transcript)  # 총 영상 시간 계산
 
             # 2. 각 문장에 대해 감정 분석 수행
             analysis_data = []
+            video_total_danger_score = 0  # 현재 비디오의 총 중독 지수
             for i, sentence in enumerate(sentences):
                 print(f"\nAnalyzing sentence: {sentence}")
 
@@ -174,11 +214,11 @@ def main():
 
             # 시각화
             df_analysis = pd.DataFrame(analysis_data)
-            plot_danger_score_over_time(df_analysis)
+            plot_sum_danger_score_over_time(df_analysis)
 
             # 누적 데이터 저장
             last_elapsed_time = df_analysis['start_time'].iloc[-1]
-            save_cumulative_data(cumulative_sum_danger_score, last_elapsed_time)
+            save_cumulative_data(cumulative_sum_danger_score, last_elapsed_time, video_id, 0)  # 중독율은 필요 시 0으로 설정
 
             # 엑셀 파일 저장
             save_to_excel(analysis_data, video_id)
@@ -188,6 +228,7 @@ def main():
             print(f"누적 위험 지수: {cumulative_sum_danger_score}")
         else:
             print("이 비디오에는 자막이 없습니다.")
-            
+
 if __name__ == "__main__":
     main()
+    
