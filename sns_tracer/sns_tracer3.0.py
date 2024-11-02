@@ -34,7 +34,15 @@ def fetch_youtube_script_with_time(video_id):
     """YouTube 비디오 ID로부터 자막 데이터 및 시간 조회."""
     try:
         transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['ko'])
-        return [{'start': item['start'], 'text': item['text']} for item in transcript]
+        result = []
+        for item in transcript:
+            if '\n' in item['text']:
+                parts = item['text'].split('\n')
+                for part in parts:
+                    result.append({'start': item['start'], 'text': part})
+            else:
+                result.append({'start': item['start'], 'text': item['text']})
+        return result
     except Exception as e:
         print(f"Error fetching transcript: {e}")
         return None
@@ -172,7 +180,7 @@ def main():
 
             analysis_data = []
             for i, sentence in enumerate(sentences):
-                print(f"\nAnalyzing sentence: {sentence}")
+                print(f"\n{i} Analyzing sentence: {sentence}")
                 start_time = transcript[i]['start']  # 초 단위
                 start_time_in_seconds = round(start_time, 2)
 
