@@ -75,32 +75,33 @@ def aggregate_emotion_scores(results):
     return emotion_scores, over_half_scores
 
 # 분석 결과 저장
-def save_to_database(data, video_id):
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS emotion_analysis (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            video_id TEXT,
-            sentence TEXT,
-            emotions TEXT,
-            scores TEXT,
-            emotion_risk_scores TEXT,
-            elapsed_time_ms REAL,
-            over_half_score TEXT,
-            risk_score_sum REAL
-        )
-    """)
+# 데이터베이스 연결 시간 제외
+# def save_to_database(data, video_id):
+#     conn = sqlite3.connect(DB_FILE)
+#     cursor = conn.cursor()
+#     cursor.execute("""
+#         CREATE TABLE IF NOT EXISTS emotion_analysis (
+#             id INTEGER PRIMARY KEY AUTOINCREMENT,
+#             video_id TEXT,
+#             sentence TEXT,
+#             emotions TEXT,
+#             scores TEXT,
+#             emotion_risk_scores TEXT,
+#             elapsed_time_ms REAL,
+#             over_half_score TEXT,
+#             risk_score_sum REAL
+#         )
+#     """)
 
-    for row in data:
-        cursor.execute("""
-            INSERT INTO emotion_analysis (video_id, sentence, emotions, scores, emotion_risk_scores, elapsed_time_ms, over_half_score, risk_score_sum)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (video_id, row['sentence'], row['emotions'], row['scores'], row['emotion_risk_scores'], row['elapsed_time_ms'], row['over_half_score'], row['risk_score_sum']))
+#     for row in data:
+#         cursor.execute("""
+#             INSERT INTO emotion_analysis (video_id, sentence, emotions, scores, emotion_risk_scores, elapsed_time_ms, over_half_score, risk_score_sum)
+#             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+#         """, (video_id, row['sentence'], row['emotions'], row['scores'], row['emotion_risk_scores'], row['elapsed_time_ms'], row['over_half_score'], row['risk_score_sum']))
 
-    conn.commit()
-    conn.close()
-
+#     conn.commit()
+#     conn.close()
+    
 # API 엔드포인트
 @app.route('/analyze', methods=['POST'])
 def analyze():
@@ -139,7 +140,7 @@ def analyze():
             'emotion_risk_scores': ', '.join(emotion_risk_scores_list)
         })
 
-    save_to_database(analysis_data, video_id)
+    #save_to_database(analysis_data, video_id)
     return jsonify({'video_id': video_id, 'analysis_data': analysis_data}), 200
 
 # 서버 실행
