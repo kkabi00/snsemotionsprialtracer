@@ -26,6 +26,7 @@ console.log("Background service worker loaded.");
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.type === "URL_CHANGED") {
         const youtubeUrl = request.url;
+        const imageUrl = chrome.runtime.getURL("generated_images/sum_danger_score_plot_with_baseline.png");
         console.log("Sending URL to server:", youtubeUrl);
         sendUrlToServer(youtubeUrl);
     }
@@ -48,7 +49,12 @@ async function sendUrlToServer(url) {
         console.log("Image URL received from server:", data.image_url);
         // You can also send this back to content.js or handle it accordingly
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            chrome.tabs.sendMessage(tabs[0].id, { type: "IMAGE_URL", imageUrl: data.image_url });
+            if (tabs && tabs.length > 0) {
+                chrome.tabs.sendMessage(tabs[0].id, { type: "IMAGE_URL", imageUrl: data.image_url });
+            } else {
+                console.error("NO active tab found")
+            }
+            
         });
     } catch (error) {
         console.error("Error sending URL to server:", error);

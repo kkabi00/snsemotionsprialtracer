@@ -17,5 +17,11 @@
   },
   "action": {
     "default_popup" : "popup.html"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["generated_images/*.png"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }

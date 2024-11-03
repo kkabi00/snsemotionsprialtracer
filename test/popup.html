@@ -15,18 +15,17 @@
             width: 250px;
             height: 300px;
         }
-        #emotionChart {
-            width: 100%;
-            height: auto;
-            border: 1px solid #ddd;
-            margin-top: 10px;
+        #emotionChart img {
+            max-width: 100%;
+            max-height: 100%;
         }
     </style>
 </head>
 <body>
     <h1>Emotion Chart</h1>
     <!-- 이미지 URL이 업데이트될 img 태그 -->
-    <img id="emotionChart" alt="Emotion Chart" src="" />
+    <div id="emotionChart"></div>
+    <button id="load-image">Load Image</button>
     <script src="popup.js"></script>
 </body>
 </html>
