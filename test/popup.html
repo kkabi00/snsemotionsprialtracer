@@ -2,11 +2,31 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>SNS emtion sprial tracer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion Chart</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            width: 250px;
+            height: 300px;
+        }
+        #emotionChart {
+            width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Video Stats</h1>
-    <canvas id="emotionChart" width="400" height="200"></canvas>
-    <script src="scripts/content.js"></script>
+    <h1>Emotion Chart</h1>
+    <!-- 이미지 URL이 업데이트될 img 태그 -->
+    <img id="emotionChart" alt="Emotion Chart" src="" />
+    <script src="popup.js"></script>
 </body>
 </html>
