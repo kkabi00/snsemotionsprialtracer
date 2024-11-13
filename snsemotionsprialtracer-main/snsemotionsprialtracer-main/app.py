@@ -2,23 +2,21 @@ from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import re
 import pandas as pd
-import time
 import matplotlib 
-matplotlib.use('Agg') # 추가 
-import matplotlib.pyplot as plt # 추가
+matplotlib.use('Agg')  # 수정 부분  
+import matplotlib.pyplot as plt  # 수정 부분
 from youtube_transcript_api import YouTubeTranscriptApi
 from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
 from kiwipiepy import Kiwi
 import os
 from datetime import datetime
-import threading
-import signal
-import sys
+import signal  # 수정 부분
+import sys     # 수정 부분
 
 app = Flask(__name__)
 CORS(app)
 # 누적 데이터 파일 경로
-CUMULATIVE_DATA_FILE = 'test/cumulative_data.csv'
+CUMULATIVE_DATA_FILE = 'test/generated_images/cumulative_data.csv'  # 수정 부분
 # 이미지 폴더 설정
 OUTPUT_FOLDER = "test/generated_images"
 if not os.path.exists(OUTPUT_FOLDER):
@@ -95,7 +93,7 @@ def get_output_folder(user_name):
 
 def load_cumulative_data():
     """이전 비디오의 누적 데이터 read"""
-    if os.path.exists('cumulative_data.csv'):
+    if os.path.exists(CUMULATIVE_DATA_FILE):
         print("데이터 파일 있음")
         df = pd.read_csv(CUMULATIVE_DATA_FILE)
         last_sum_danger_score = df['sum_danger_score'].iloc[-1]
@@ -178,7 +176,7 @@ def process_url():
     # 이미지의 URL을 확장 프로그램에 반환
     return jsonify({"image_url": f"{image_path}"})
 
-def create_image_from_url(url):
+def create_image_from_url(url):  # 수정 부분
     image_filename = "sum_danger_score_plot_with_baseline.png"  # 예시 파일 이름
     image_path = os.path.join(OUTPUT_FOLDER, image_filename)
     #output_folder = get_output_folder("user_name")
@@ -225,11 +223,11 @@ def create_image_from_url(url):
 
         # 총 비디오 시청 시간은 마지막 문장의 start_time + 해당 문장의 길이
         last_sentence_start_time = transcript[-1]['start']  # 초 단위
-        last_sentence_length_estimate = len(transcript[-1]['text']) / 100  # 문장의 길이를 시간으로 변환 (추정치)
+        last_sentence_length_estimate = len(transcript[-1]['text']) / 100  # 문장의 길이를 시간으로 변환 (추정치) 
         video_total_time = last_sentence_start_time + last_sentence_length_estimate  # 초 단위
 
         # 누적 시청 시간 업데이트 (분 단위로 변환)
-        cumulative_elapsed_time += (video_total_time / 60)  # 초 -> 분
+        cumulative_elapsed_time = (cumulative_elapsed_time + video_total_time) / 60  # 초 -> 분   # 수정 부분
 
         df_analysis = pd.DataFrame(analysis_data)
         plot_sum_danger_score_over_time(df_analysis, OUTPUT_FOLDER)
@@ -245,7 +243,7 @@ def create_image_from_url(url):
         print("이 비디오에는 자막이 없습니다.")
         return None
     
-def signal_handler(sig, frame):
+def signal_handler(sig, frame):  # 수정 부분
     print("프로그램 종료 중...")
     sys.exit(0)    
 
@@ -255,5 +253,5 @@ def serve_image(filename):
     return send_file(os.path.join(OUTPUT_FOLDER, filename), mimetype='image/png')
 # 서버 실행
 if __name__ == '__main__':
-    signal.signal(signal.SIGINT, signal_handler)
-    app.run(debug=True, use_reloader=False)
+    signal.signal(signal.SIGINT, signal_handler)  # 수정 부분
+    app.run(debug=True, use_reloader=False)  # 수정 부분
