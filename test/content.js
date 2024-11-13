@@ -35,7 +35,8 @@ function startObserving() {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === "IMAGE_URL") {
-        const imageUrl = message.imageUrl;
+        console.log("Message received in content.js:", message);
+        const imageUrl = message.imageUrl
         
         // 이미지를 추가할 컨테이너 요소
         let imgContainer = document.getElementById("emotionChart");
@@ -52,6 +53,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         imgContainer.appendChild(img);
     }
 });
+
 // alert 추가
 // 페이지가 로드될 때 URL 변경 감시 시작
 startObserving();
