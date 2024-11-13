@@ -74,11 +74,10 @@ async function sendUrlToServer(url) {
         // You can also send this back to content.js or handle it accordingly
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             if (tabs && tabs.length > 0) {
-                chrome.tabs.sendMessage(tabs[0].id, { type: "IMAGE_URL", imageUrl: data.image_url });
+                chrome.tabs.sendMessage(tabs[0].id, { type: "IMAGE_URL", imageUrl: data.image_url});
             } else {
                 console.error("NO active tab found")
             }
-            
         });
     } catch (error) {
         console.error("Error sending URL to server:", error);
