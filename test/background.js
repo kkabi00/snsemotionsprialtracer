@@ -21,7 +21,31 @@
 // });
 
 const FLASK_SERVER_URL = "http://localhost:5000/";
+const YOUTUBE_URL = "https://www.youtube.com";
 console.log("Background service worker loaded.");
+
+chrome.sidePanel
+    .setPanelBehavior({ openPanelOnActionClick: true })
+    .catch((error) => console.error(error));
+    
+chrome.tabs.onUpdated.addListener(async (tabId, info, tab) => {
+    if (!tab.url) return;
+    const url = new URL(tab.url);
+    // Enables the side panel on google.com
+    if (url.origin === YOUTUBE_URL) {
+      await chrome.sidePanel.setOptions({
+        tabId,
+        path: 'main.html',
+        enabled: true
+      });
+    } else {
+      // Disables the side panel on all other sites
+      await chrome.sidePanel.setOptions({
+        tabId,
+        enabled: false
+      });
+    }
+});
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.type === "URL_CHANGED") {

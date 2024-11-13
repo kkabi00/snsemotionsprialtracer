@@ -52,6 +52,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         imgContainer.appendChild(img);
     }
 });
-
+// alert 추가
 // 페이지가 로드될 때 URL 변경 감시 시작
 startObserving();
