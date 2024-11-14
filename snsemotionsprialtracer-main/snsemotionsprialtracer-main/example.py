@@ -130,10 +130,9 @@ def save_cumulative_data(sum_danger_score, elapsed_time, video_id, output_folder
     else:
         data.to_csv(file_path, index=False)
 
-def plot_sum_danger_score_over_time(output_folder): # 수정 부분
+def plot_sum_danger_score_over_time(df, output_folder): # 수정 부분
     """시간에 따른 sum_danger_score를 시각화, 증가율이 1인 기준선 전경 추가"""
     plt.figure(figsize=(12, 6))
-    df1 = pd.read_csv(CUMULATIVE_DATA_FILE)
     df2 = pd.read_csv(CUMULATIVE_DATA_FILE2)
     # 누적된 sum_danger_score 그래프
     plt.plot(df2['start_time'], df2['sum_danger_score'], marker='o', linestyle='-', label='Sum Danger Score')
@@ -148,8 +147,8 @@ def plot_sum_danger_score_over_time(output_folder): # 수정 부분
     # plt.ylim(bottom=0, top=4000)  # y축 범위 (0에서 4000까지 고정)
 
     # x축과 y축의 동적 할당
-    plt.xlim(left=0, right=df1['elapsed_time'].iloc[-1]+300) 
-    plt.ylim(bottom=0, top=df1['sum_danger_score'].iloc[-1]+300)
+    plt.xlim(left=0, right=df['elapsed_time'].iloc[-1]+300) 
+    plt.ylim(bottom=0, top=df['sum_danger_score'].iloc[-1]+300)
 
     # 그래프 설정
     plt.title('Sum Danger Score Over Elapsed Time with Baseline')
@@ -249,7 +248,7 @@ def create_image_from_url(url):
 
         df_analysis = pd.DataFrame(analysis_data)
         save_current_data(df_analysis) # 수정 부분
-        plot_sum_danger_score_over_time(OUTPUT_FOLDER)
+        plot_sum_danger_score_over_time(df_analysis, OUTPUT_FOLDER)
         save_cumulative_data(cumulative_sum_danger_score, video_total_time, video_id, OUTPUT_FOLDER)
         #save_to_excel(analysis_data, video_id, OUTPUT_FOLDER)
 
