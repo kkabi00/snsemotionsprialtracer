@@ -46,7 +46,7 @@ def fetch_youtube_script_with_time(video_id):
     """YouTube 비디오 ID로부터 자막 데이터 및 시간 조회."""
     try:
         transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['ko'])
-        return [{'start': item['start'], 'text': item['text']} for item in transcript]
+        return [{'start': item['start'], 'duration': item['duration'], 'text': item['text']} for item in transcript]
     except Exception as e:
         print(f"Error fetching transcript: {e}")
         return None
@@ -62,8 +62,9 @@ def emotion_analysis(text):
 
 def split_into_sentences(text):
     """Kiwi 사용, 텍스트를 문장 단위로 분리"""
-    kiwi = Kiwi()
-    sentences = [sentence.text for sentence in kiwi.split_into_sents(text)] # type: ignore
+    # kiwi = Kiwi()
+    # sentences = [sentence.text for sentence in kiwi.split_into_sents(text)] # type: ignore
+    sentences = text.split(',')
     return sentences
 
 def aggregate_emotion_scores(results): 
@@ -210,8 +211,8 @@ def create_image_from_url(url):
 
     transcript = fetch_youtube_script_with_time(video_id)
     if transcript:
-        sentences = split_into_sentences(' '.join([item['text'] for item in transcript]))
-        
+        sentences = ([item['text'] for item in transcript])
+
         if os.path.exists(CUMULATIVE_DATA_FILE2): # 수정 부분
             df2 = pd.read_csv(CUMULATIVE_DATA_FILE2) 
             last_start_time = df2['start_time'].iloc[-1]
@@ -220,9 +221,10 @@ def create_image_from_url(url):
     
         analysis_data = []
         for i, sentence in enumerate(sentences):
-            print(f"\nAnalyzing sentence: {sentence}")
-            start_time = transcript[i]['start']  # 초 단위
-            start_time_in_seconds = last_start_time + round(start_time, 2) # 수정 부분
+            
+            print(f"\nAnalyzing text: {sentence}")
+            
+            start_time_in_seconds = last_start_time + transcript[i]['start'] # 수정 부분
 
             # 감정 분석 수행
             results = emotion_analysis(sentence)
@@ -235,7 +237,7 @@ def create_image_from_url(url):
 
             analysis_data.append({ 
                 'start_time': round(start_time_in_seconds, 2), # 수정 부분
-                'sentence': sentence,
+                'sentences': sentence,
                 'emotions': ', '.join(aggregated_scores.keys()),
                 'scores': ', '.join([f"{score:.2f}" for score in aggregated_scores.values()]),
                 'sentence_danger_score': round(sentence_danger_score, 2),
@@ -246,7 +248,14 @@ def create_image_from_url(url):
         last_sentence_start_time = transcript[-1]['start']  # 초 단위
         last_sentence_length_estimate = len(transcript[-1]['text']) / 100  # 문장의 길이를 시간으로 변환 (추정치) 
         video_total_time = last_sentence_start_time + last_sentence_length_estimate  # 초 단위 
-
+        
+        # 추가
+        # total_sentences = len(transcript)
+        # for i, sentence in enumerate(analysis_data):
+        # # 각 문장의 시작 시간을 비디오 시간에 맞게 균등 분배
+        # start_time_in_seconds = (video_total_time / total_sentences) * (i + 1)
+        # sentence['start_time'] = round(start_time_in_seconds, 2)
+        
         df_analysis = pd.DataFrame(analysis_data)
         save_current_data(df_analysis) # 수정 부분
         save_cumulative_data(cumulative_sum_danger_score, video_total_time, video_id, OUTPUT_FOLDER)
@@ -259,7 +268,7 @@ def create_image_from_url(url):
         # 누적 시청 시간을 분 초 형태로 포맷팅하여 출력
         formatted_time = format_time_in_minutes_and_seconds(cumulative_elapsed_time)
         print(f"\n누적 시청 시간: {formatted_time}") #오류 다소 있음
-        print(f"누적 위험 지수: {cumulative_sum_danger_score}")
+        print(f"누적 위험 지수: {round(cumulative_sum_danger_score, 2)}")
         return f"{OUTPUT_FOLDER}/{image_filename}"
     else:
         print("이 비디오에는 자막이 없습니다.")
