@@ -1,6 +1,5 @@
 let lastUrl = location.href;
 let observer;
-let debounceTimeout;
 
 function startObserving() {
     // 기존 observer가 있다면 중지
@@ -10,17 +9,14 @@ function startObserving() {
 
     observer = new MutationObserver(() => {
         const currentUrl = location.href;
-        if (currentUrl !== lastUrl && currentUrl.includes("youtube.com/watch")) {
+        if (currentUrl !== lastUrl && currentUrl.match(/youtube\.com\/watch\?v=/)) {
             lastUrl = currentUrl;
-            clearTimeout(debounceTimeout);
-            debounceTimeout = setTimeout(() => {
-                try {
-                    console.log("Detected new URL:", currentUrl);
-                    chrome.runtime.sendMessage({ type: "URL_CHANGED", url: currentUrl });
-                } catch (error) {
-                    console.error("Failed to send message:", error);
-                }
-            }, 300);
+            try {
+                console.log("Detected new URL:", currentUrl);
+                chrome.runtime.sendMessage({ type: "URL_CHANGED", url: currentUrl });
+            } catch (error) {
+                console.error("Failed to send message:", error);
+            }
         }
     });
 
@@ -29,7 +25,6 @@ function startObserving() {
     // Clean up observer and debounce on page unload
      window.addEventListener("beforeunload", () => {
         if (observer) observer.disconnect();
-        clearTimeout(debounceTimeout);
     });
 }
 
