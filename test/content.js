@@ -165,7 +165,7 @@ function addCustomDiv() {
 
             // "오늘의 보고서" 버튼 추가
             const reportButton = document.createElement('button');
-            reportButton.textContent = '오늘의 보고서';
+            reportButton.textContent = '오늘의 보고서 다운로드';
 
             // 버튼 클릭 이벤트
             analysisButton.addEventListener('click', () => {
