@@ -2,10 +2,9 @@ from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import re
 import pandas as pd
-#import time
 import matplotlib 
-matplotlib.use('Agg')  # 수정 부분 
-import matplotlib.pyplot as plt 
+matplotlib.use('Agg')  # 수정 부분  
+import matplotlib.pyplot as plt  # 수정 부분
 from youtube_transcript_api import YouTubeTranscriptApi
 from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
 from kiwipiepy import Kiwi
@@ -17,7 +16,7 @@ import sys     # 수정 부분
 app = Flask(__name__)
 CORS(app)
 # 누적 데이터 파일 경로
-CUMULATIVE_DATA_FILE = 'cumulative_data.csv'
+CUMULATIVE_DATA_FILE = 'cumulative_data.csv'  # 수정 부분
 # 이미지 폴더 설정
 OUTPUT_FOLDER = "test/generated_images"
 if not os.path.exists(OUTPUT_FOLDER):
@@ -95,14 +94,16 @@ def get_output_folder(user_name):
 def load_cumulative_data():
     """이전 비디오의 누적 데이터 read"""
     if os.path.exists(CUMULATIVE_DATA_FILE):
+        print("데이터 파일 있음")
         df = pd.read_csv(CUMULATIVE_DATA_FILE)
         last_sum_danger_score = df['sum_danger_score'].iloc[-1]
         last_elapsed_time = df['elapsed_time'].iloc[-1]
         return last_sum_danger_score, last_elapsed_time
     else:
+        print("데이터 파일 없음")
         return 0, 0
 
-def save_cumulative_data(sum_danger_score, elapsed_time, video_id, output_folder, addiction_rate=0):
+def save_cumulative_data(sum_danger_score, elapsed_time, video_id, output_folder, addiction_rate = 0):
     """현재 비디오의 누적 데이터 update"""
     addiction_rate_percentage = addiction_rate * 100
     _, last_elapsed_time = load_cumulative_data()
@@ -117,8 +118,10 @@ def save_cumulative_data(sum_danger_score, elapsed_time, video_id, output_folder
 
     file_path = os.path.join(output_folder, 'cumulative_data.csv')
     if os.path.exists(file_path):
+        print("저장완")
         data.to_csv(file_path, mode='a', header=False, index=False)
     else:
+        print("저장실패")
         data.to_csv(file_path, index=False)
 
 def plot_sum_danger_score_over_time(df, output_folder):
@@ -147,14 +150,14 @@ def plot_sum_danger_score_over_time(df, output_folder):
     plt.close()
     print(f"Plot saved to {image_path}")
 
-def save_to_excel(analysis_data, video_id, output_folder):
-    """문장별 감정 분석 결과: 엑셀화"""
-    df_analysis = pd.DataFrame(analysis_data)
-    df_analysis['sum_danger_score'] = df_analysis['sentence_danger_score'].cumsum()
+# def save_to_excel(analysis_data, video_id, output_folder):
+#     """문장별 감정 분석 결과: 엑셀화"""
+#     df_analysis = pd.DataFrame(analysis_data)
+#     df_analysis['sum_danger_score'] = df_analysis['sentence_danger_score'].cumsum()
 
-    excel_filename = os.path.join(output_folder, f"emotion_analysis_{video_id}.xlsx")
-    df_analysis.to_excel(excel_filename, sheet_name="Sentence Analysis", index=False)
-    print(f"\n저장 완료: {excel_filename}")
+#     excel_filename = os.path.join(output_folder, f"emotion_analysis_{video_id}.xlsx")
+#     df_analysis.to_excel(excel_filename, sheet_name="Sentence Analysis", index=False)
+#     print(f"\n저장 완료: {excel_filename}")
 
 def format_time_in_minutes_and_seconds(time_in_minutes):
     """시간 포맷팅."""
@@ -167,43 +170,42 @@ def process_url():
     data = request.get_json()
     youtube_url = data.get("url")
     print("성공")
-    # URL을 이용해 이미지 생성 로직 수행 
-    # 여기 부분을 
+    # URL을 이용해 이미지 생성 로직 수행
     image_path = create_image_from_url(youtube_url)
     
+    # 이미지의 URL을 확장 프로그램에 반환
     if image_path is None:
         print("process_url() 종료")
     else :
         # 이미지의 URL을 확장 프로그램에 반환
         return jsonify({"image_url": f"{image_path}"})
 
-def create_image_from_url(url):
+def create_image_from_url(url):  # 수정 부분
     image_filename = "sum_danger_score_plot_with_baseline.png"  # 예시 파일 이름
     image_path = os.path.join(OUTPUT_FOLDER, image_filename)
     #output_folder = get_output_folder("user_name")
     cumulative_sum_danger_score, cumulative_elapsed_time = load_cumulative_data()
+    
     #youtube_url = input("YouTube URL 입력 (종료하려면 'exit' 입력): ")
     youtube_url = url
     if youtube_url.lower() == 'exit':
         print("누적 데이터를 시각화 및 프로그램 자동 종료")
         return None
+
     video_id = extract_video_id(youtube_url)
     if video_id is None:
         print("잘못된 YouTube URL입니다.")
         return None
 
     transcript = fetch_youtube_script_with_time(video_id)
-    if not transcript:
-        print("이 비디오는 자막이 없습니다.")
-        return None
-    else:
+    if transcript:
         sentences = split_into_sentences(' '.join([item['text'] for item in transcript]))
 
         analysis_data = []
         for i, sentence in enumerate(sentences):
             print(f"\nAnalyzing sentence: {sentence}")
             start_time = transcript[i]['start']  # 초 단위
-            start_time_in_seconds = round(start_time, 2)
+            start_time_in_seconds = round(start_time, 2) 
 
             # 감정 분석 수행
             results = emotion_analysis(sentence)
@@ -225,11 +227,11 @@ def create_image_from_url(url):
 
         # 총 비디오 시청 시간은 마지막 문장의 start_time + 해당 문장의 길이
         last_sentence_start_time = transcript[-1]['start']  # 초 단위
-        last_sentence_length_estimate = len(transcript[-1]['text']) / 100  # 문장의 길이를 시간으로 변환 (추정치)
+        last_sentence_length_estimate = len(transcript[-1]['text']) / 100  # 문장의 길이를 시간으로 변환 (추정치) 
         video_total_time = last_sentence_start_time + last_sentence_length_estimate  # 초 단위
 
         # 누적 시청 시간 업데이트 (분 단위로 변환)
-        cumulative_elapsed_time += (cumulative_elapsed_time + video_total_time) / 60  # 초 -> 분
+        cumulative_elapsed_time = (cumulative_elapsed_time + video_total_time) / 60  # 초 -> 분   # 수정 부분
 
         df_analysis = pd.DataFrame(analysis_data)
         plot_sum_danger_score_over_time(df_analysis, OUTPUT_FOLDER)
@@ -241,11 +243,14 @@ def create_image_from_url(url):
         print(f"\n누적 시청 시간: {formatted_time}") #오류 다소 있음
         print(f"누적 위험 지수: {cumulative_sum_danger_score}")
         return f"{OUTPUT_FOLDER}/{image_filename}"
-
+    else:
+        print("이 비디오에는 자막이 없습니다.")
+        return None
+    
 def signal_handler(sig, frame):  # 수정 부분
     print("프로그램 종료 중...")
-    sys.exit(0)  
-    
+    sys.exit(0)    
+
 # 정적 파일 서빙을 위한 경로
 @app.route('/generated_images/<filename>')
 def serve_image(filename):
@@ -254,92 +259,3 @@ def serve_image(filename):
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal_handler)  # 수정 부분
     app.run(debug=True, use_reloader=False)  # 수정 부분
-
-# DB_FILE = "emotion_analysis_results.db"
-# # 감정 위험 점수 정의
-# risk_scores = {
-#     'Admiration': 1.0, 'Amusement': 1.0, 'Approval': 1.2, 'Caring': 1.2, 'Curiosity': 1.2,
-#     'Desire': 1.3, 'Excitement': 1.4, 'Gratitude': 1.2, 'Joy': 1.5, 'Love': 1.5,
-#     'Optimism': 1.3, 'Pride': 1.3, 'Relief': 1.0, 'Realization': 1.1, 'Surprise': 1.0,
-#     'Neutral': 1.0,  # 대소문자 일치
-#     'Annoyance': 3.0, 'Confusion': 3.2, 'Disappointment': 3.5, 'Disapproval': 3.8,
-#     'Disgust': 4.0, 'Embarrassment': 4.2, 'Fear': 4.5, 'Grief': 4.5, 'Nervousness': 4.0,
-#     'Remorse': 3.5, 'Sadness': 4.0
-# }
-
-# # 유튜브 URL에서 video ID 추출
-# def extract_video_id(url):
-#     try:
-#         if 'youtu.be' in url:
-#             match = re.search(r"youtu\.be/([^#\&\?]+)", url)
-#         else:
-#             match = re.search(r"v=([^#\&\?]+)", url)
-#         return match.group(1) if match else None
-#     except Exception as e:
-#         return None
-
-# # 유튜브 자막 가져오기
-# def fetch_youtube_script(video_id):
-#     try:
-#         transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['ko'])
-#         return ' '.join([item['text'] for item in transcript])
-#     except Exception as e:
-#         print(e)
-#         return None
-
-# # 감정 분석 실행
-# def emotion_analysis(text):
-#     model_name = "monologg/koelectra-base-v3-goemotions"
-#     tokenizer = AutoTokenizer.from_pretrained(model_name)
-#     model = AutoModelForTokenClassification.from_pretrained(model_name)
-#     nlp = pipeline("token-classification", model=model, tokenizer=tokenizer, aggregation_strategy="simple")
-#     return nlp(text)
-
-# # 텍스트를 문장으로 분할
-# def split_into_sentences(text):
-#     kiwi = Kiwi()
-#     sentences = [sentence.text for sentence in kiwi.split_into_sents(text)]
-#     return sentences
-
-# # 감정 점수 집계
-# def aggregate_emotion_scores(results):
-#     emotion_scores = {}
-#     over_half_scores = {}
-
-#     for result in results:
-#         emotion = result['entity_group']
-#         score = result['score']
-#         emotion_scores[emotion] = emotion_scores.get(emotion, 0) + score
-
-#     for emotion, score in emotion_scores.items():
-#         over_half_scores[emotion] = 1 if score >= 0.5 else 0
-
-#     return emotion_scores, over_half_scores
-
-# 분석 결과 저장
-# 데이터베이스 연결 시간 제외
-# def save_to_database(data, video_id):
-#     conn = sqlite3.connect(DB_FILE)
-#     cursor = conn.cursor()
-#     cursor.execute("""
-#         CREATE TABLE IF NOT EXISTS emotion_analysis (
-#             id INTEGER PRIMARY KEY AUTOINCREMENT,
-#             video_id TEXT,
-#             sentence TEXT,
-#             emotions TEXT,
-#             scores TEXT,
-#             emotion_risk_scores TEXT,
-#             elapsed_time_ms REAL,
-#             over_half_score TEXT,
-#             risk_score_sum REAL
-#         )
-#     """)
-
-#     for row in data:
-#         cursor.execute("""
-#             INSERT INTO emotion_analysis (video_id, sentence, emotions, scores, emotion_risk_scores, elapsed_time_ms, over_half_score, risk_score_sum)
-#             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-#         """, (video_id, row['sentence'], row['emotions'], row['scores'], row['emotion_risk_scores'], row['elapsed_time_ms'], row['over_half_score'], row['risk_score_sum']))
-
-#     conn.commit()
-#     conn.close()

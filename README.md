@@ -9,6 +9,7 @@ SNS Emotion Sprial Tracer
   <br/>pip install youtube_transcript_api
   <br/>pip install transformers
   <br/>pip install pydub
+  <br/>pip install flask-socketio
 
   
 - web 크롬 확장프로그램 테스트법 
