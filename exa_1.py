@@ -8,7 +8,7 @@ matplotlib.use('Agg')  # 수정 부분
 import matplotlib.pyplot as plt  # 수정 부분
 from youtube_transcript_api import YouTubeTranscriptApi
 from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
-from kiwipiepy import Kiwi
+# from kiwipiepy import Kiwi
 import os
 from datetime import datetime
 import signal  # 수정 부분
@@ -23,7 +23,9 @@ CUMULATIVE_DATA_FILE2 = 'test/generated_images/current_data.csv'    # 수정 부
 OUTPUT_FOLDER = "test/generated_images"
 if not os.path.exists(OUTPUT_FOLDER):
     os.makedirs(OUTPUT_FOLDER)
-
+@app.route("/")
+def index():
+    return f"Current working directory: {os.getcwd()}"
 # 위험지수 사전 정의
 risk_scores = {
     'admiration': 1.0, 'amusement': 1.0, 'approval': 1.2, 'caring': 1.2, 'curiosity': 1.2,
@@ -131,7 +133,7 @@ def save_cumulative_data(sum_danger_score, elapsed_time, video_id, output_folder
         data.to_csv(file_path, mode='a', header=False, index=False)
     else:
         data.to_csv(file_path, index=False)
-
+            
 def plot_sum_danger_score_over_time(output_folder): # 수정 부분
     """시간에 따른 sum_danger_score를 시각화, 증가율이 1인 기준선 전경 추가"""
     plt.figure(figsize=(12, 6))
@@ -238,10 +240,10 @@ def create_image_from_url(url):
 
             analysis_data.append({ 
                 'start_time': round(start_time_in_seconds, 2), # 수정 부분
-                'sentences': sentence,
-                'emotions': ', '.join(aggregated_scores.keys()),
-                'scores': ', '.join([f"{score:.2f}" for score in aggregated_scores.values()]),
-                'sentence_danger_score': round(sentence_danger_score, 2),
+                #'sentences': sentence, # 준영수정 아래 필요없는 부분 처리함
+                #'emotions': ', '.join(aggregated_scores.keys()),
+                #'scores': ', '.join([f"{score:.2f}" for score in aggregated_scores.values()]),
+                #'sentence_danger_score': round(sentence_danger_score, 2),
                 'sum_danger_score': round(cumulative_sum_danger_score, 2)
             })
 
@@ -278,12 +280,12 @@ def create_image_from_url(url):
 def signal_handler(sig, frame):  
     print("프로그램 종료 중...")
     sys.exit(0)    
-
+    
 # 정적 파일 서빙을 위한 경로
 @app.route('/generated_images/<filename>')
 def serve_image(filename):
     return send_file(os.path.join(OUTPUT_FOLDER, filename), mimetype='image/png')
 # 서버 실행
 if __name__ == '__main__':
-    signal.signal(signal.SIGINT, signal_handler)  
+    signal.signal(signal.SIGINT, signal_handler)
     app.run(debug=True, use_reloader=False)  
