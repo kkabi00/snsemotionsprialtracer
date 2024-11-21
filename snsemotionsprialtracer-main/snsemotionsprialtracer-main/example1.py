@@ -1,3 +1,8 @@
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+import numpy as np
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import re
@@ -131,40 +136,83 @@ def save_cumulative_data(sum_danger_score, elapsed_time, video_id, output_folder
     else:
         data.to_csv(file_path, index=False)
 
+model = None
+def regression_results():
+    global model
+
+    df2 = pd.read_csv('test/current_data.csv')  #딥러닝 시킬 데이터 경로 직접 따로 추가
+
+    X = np.array(df2['start_time']) 
+    Y = np.array(df2['sum_danger_score'])
+
+    # 데이터 정규화
+    scaler_X = StandardScaler()
+    X_scaled = scaler_X.fit_transform(X.reshape(-1, 1)) 
+
+    scaler_Y = StandardScaler()
+    Y_scaled = scaler_Y.fit_transform(Y.reshape(-1, 1)) 
+
+    # 데이터 분할 
+    X_train, X_val, Y_train, Y_val = train_test_split(X_scaled, Y_scaled, test_size=0.2, random_state=42)
+
+    # 모델 정의
+    model = Sequential([
+        Dense(128, input_dim=1, activation='relu'), 
+        Dense(64, activation='relu'),
+        Dense(64, activation='relu'),
+        Dense(1) 
+    ])
+
+    # 모델 컴파일
+    model.compile(optimizer='adam', loss='mse')
+
+    # 모델 학습
+    model.fit(X_train, Y_train, epochs=50, batch_size=32, validation_data=(X_val, Y_val))
+
+
 def plot_sum_danger_score_over_time(output_folder): # 수정 부분
-    """시간에 따른 sum_danger_score를 시각화, 증가율이 1인 기준선 전경 추가"""
-    plt.figure(figsize=(12, 6))
-    df1 = pd.read_csv(CUMULATIVE_DATA_FILE)
-    df2 = pd.read_csv(CUMULATIVE_DATA_FILE2)
-    # 누적된 sum_danger_score 그래프
-    plt.plot(df2['start_time'], df2['sum_danger_score'], marker='o', linestyle='-', label='Sum Danger Score')
+
+    df = pd.read_csv(CUMULATIVE_DATA_FILE)
+    df1 = pd.read_csv(CUMULATIVE_DATA_FILE2)
     
-    # 기준선 (증가율이 1, 시작점은 첫 영상의 시작 sum danger score)
-    start_score = df2['sum_danger_score'].iloc[0]  # 첫 sum danger score 값을 기준으로 설정
-    base_line = [start_score + i for i in range(len(df2))]  # 증가율이 1인 선형 기준선
-    plt.plot(df2['start_time'], base_line, linestyle='--', color='red', label='Baseline (1 per step)')
-    
-    # x축과 y축의 범위 고정
-    # plt.xlim(left=0, right=15000)  # x축 범위 (0에서 15000까지 고정)
-    # plt.ylim(bottom=0, top=4000)  # y축 범위 (0에서 4000까지 고정)
+    # 데이터 정규화
+    scaler_X = StandardScaler()
+    scaler_Y = StandardScaler()
+
+    # 예측값 생성
+    x1 = np.array(df1['start_time']) 
+    x1_scaled = scaler_X.fit_transform(x1.reshape(-1, 1))
+
+    predicted_scores = model.predict(x1_scaled)
+
+    # 예측된 값을 원래의 scale로 변환
+    predicted_scores_original = scaler_Y.inverse_transform(predicted_scores)
+
+    # 새로운 베이스라인 생성
+    new_base_line = predicted_scores_original.flatten() 
+
+    # 기존 그래프에 새로운 베이스라인 추가
+    plt.plot(df1['start_time'], df1['sum_danger_score'], marker='o', linestyle='-', label='Sum Danger Score')
+    plt.plot(df1['start_time'], new_base_line, linestyle='--', color='red', label='Predicted Baseline')
 
     # x축과 y축의 동적 할당
-    plt.xlim(left=0, right=df1['elapsed_time'].iloc[-1]+300) 
-    plt.ylim(bottom=0, top=df1['sum_danger_score'].iloc[-1]+300)
+    plt.xlim(left=0, right=df['elapsed_time'].iloc[-1]+200) 
+    plt.ylim(bottom=0, top=df['sum_danger_score'].iloc[-1]+200)
 
-    # 그래프 설정
     plt.title('Sum Danger Score Over Elapsed Time with Baseline')
     plt.xlabel('Elapsed Time (s)')
     plt.ylabel('Sum Danger Score')
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
-    
-    # 이미지 저장
-    image_path = os.path.join(output_folder, 'test.png')
+
+    image_path = os.path.join(OUTPUT_FOLDER, 'sum_danger_score_plot_with_baseline.png')
     plt.savefig(image_path)
     plt.close()
     print(f"Plot saved to {image_path}")
+
+    # loss = model.evaluate(x1_scaled, y1_scaled)
+    # print(f'Model Loss: {loss}')
 
 # def save_to_excel(analysis_data, video_id, output_folder):
 #     """문장별 감정 분석 결과: 엑셀화"""
@@ -249,13 +297,6 @@ def create_image_from_url(url):
         last_sentence_length_estimate = len(transcript[-1]['text']) / 100  # 문장의 길이를 시간으로 변환 (추정치) 
         video_total_time = last_sentence_start_time + last_sentence_length_estimate  # 초 단위 
         
-        # 추가
-        # total_sentences = len(transcript)
-        # for i, sentence in enumerate(analysis_data):
-        # # 각 문장의 시작 시간을 비디오 시간에 맞게 균등 분배
-        # start_time_in_seconds = (video_total_time / total_sentences) * (i + 1)
-        # sentence['start_time'] = round(start_time_in_seconds, 2)
-        
         df_analysis = pd.DataFrame(analysis_data)
         save_current_data(df_analysis) # 수정 부분
         save_cumulative_data(cumulative_sum_danger_score, video_total_time, video_id, OUTPUT_FOLDER)
@@ -284,5 +325,8 @@ def serve_image(filename):
     return send_file(os.path.join(OUTPUT_FOLDER, filename), mimetype='image/png')
 # 서버 실행
 if __name__ == '__main__':
-    signal.signal(signal.SIGINT, signal_handler)  
+    signal.signal(signal.SIGINT, signal_handler)
+    print("모델 학습 시작...")
+    regression_results()  # 딥러닝 모델을 한 번만 학습
+    print("모델 학습 완료.")  
     app.run(debug=True, use_reloader=False)  
