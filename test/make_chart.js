@@ -30,7 +30,19 @@ function initializeChart(labels, dataPoints) {
     const yMax = Math.ceil(Math.max(...dataPoints) / 100) * 100 + 300;
 
     // Base line 생성: start_score + i (i는 증가하는 인덱스)
-    const baseLine = Array.from({ length: labels.length }, (_, i) => i);
+    // const baseLine = Array.from({ length: labels.length }, (_, i) => i);
+
+    // 기울기와 절편 설정 (Y = mx + c)
+    // 고자극 선
+    const slope1 = (7000 - 0) / 14400; // Y = 7000, X = 14400
+    const intercept1 = 0; // Y절편 (c)
+    // 저자극 선
+    const slope2 = (5000 - 0) / 14400; // Y = 5000, X = 14400
+    const intercept2 = 0; // Y절편 (c)
+
+    // 직선 데이터 계산
+    const line1 = labels.map((x) => slope1 * x + intercept1); // Y = slope1 * X + intercept1
+    const line2 = labels.map((x) => slope2 * x + intercept2); // Y = slope2 * X + intercept2
 
     const chartConfig = {
       type: 'line',
@@ -44,14 +56,28 @@ function initializeChart(labels, dataPoints) {
             backgroundColor: 'rgba(75, 192, 192, 0.2)',
             tension: 0.4, // 곡선 정도
           },
+          // {
+          //   label: 'Baseline (1 per step)', // 선형 기준선
+          //   data: baseLine, // Base line 데이터
+          //   borderColor: 'rgba(255, 99, 132, 1)', // 빨간색
+          //   backgroundColor: 'rgba(255, 99, 132, 0.2)', // 투명한 빨간색
+          //   borderDash: [5, 5], // 점선
+          //   tension: 0, // 직선
+          // }
           {
-            label: 'Baseline (1 per step)', // 선형 기준선
-            data: baseLine, // Base line 데이터
-            borderColor: 'rgba(255, 99, 132, 1)', // 빨간색
-            backgroundColor: 'rgba(255, 99, 132, 0.2)', // 투명한 빨간색
-            borderDash: [5, 5], // 점선
-            tension: 0, // 직선
-          }
+            label: 'Danger_Line', // 고자극 직선
+            data: line1, // 계산된 직선 데이터
+            borderColor: 'rgba(255, 99, 132, 1)', // 파란색
+            borderDash: [10, 5], // 점선
+            fill: false,
+          },
+          {
+            label: 'Safe_Line', // 저자극 직선
+            data: line2, // 계산된 직선 데이터
+            borderColor: 'rgba(0, 128, 0, 1)', // 초록색
+            borderDash: [10, 5], // 점선
+            fill: false,
+          },
         ],
       },
       options: {
