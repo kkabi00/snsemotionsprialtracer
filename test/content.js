@@ -25,7 +25,7 @@ function startObserving() {
     });
 
     observer.observe(document, { subtree: true, childList: true });
-    
+
     // Clean up observer and debounce on page unload
      window.addEventListener("beforeunload", () => {
         if (observer) observer.disconnect();
@@ -36,7 +36,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === "IMAGE_URL") {
         console.log("Message received in content.js:", message);
         const imageUrl = message.imageUrl
-        
+
         // 이미지를 추가할 컨테이너 요소
         let imgContainer = document.getElementById("emotionChart");
         if (!imgContainer) {
@@ -123,7 +123,7 @@ function addDynamicStyles() {
                 color: white;
                 border: none;
                 border-radius: 5px;
-                cursor: pointer;
+                cursor: pointer;    
             }
 
             #additional-info button:hover {
@@ -160,7 +160,7 @@ function addCustomDiv() {
 
             // 이미지 공간 추가
             const reportImage = document.createElement('img');
-            reportImage.src = 'https://via.placeholder.com/250'; // 임시 이미지 URL
+            reportImage.src = 'http://127.0.0.1:5000/generated_images/test.png'; // 임시 이미지 URL
             reportImage.alt = '오늘의 보고서 미리보기';
 
             // "오늘의 보고서" 버튼 추가

@@ -13,6 +13,7 @@ import os
 from datetime import datetime
 import signal  # 수정 부분
 import sys     # 수정 부분
+import csv #csv 업로드
 
 app = Flask(__name__)
 CORS(app)
@@ -285,6 +286,19 @@ def signal_handler(sig, frame):
 @app.route('/generated_images/<filename>')
 def serve_image(filename):
     return send_file(os.path.join(OUTPUT_FOLDER, filename), mimetype='image/png')
+
+#csv data 서버 업로드용
+@app.route('/get_csv_data', methods=['GET'])
+def get_csv_data():
+    data = []
+    with open(CUMULATIVE_DATA_FILE2, newline='', encoding='utf-8') as csvfile:
+        csvreader = csv.DictReader(csvfile)
+        for row in csvreader:
+            data.append(row)
+
+    return jsonify(data)
+
+
 # 서버 실행
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal_handler)
