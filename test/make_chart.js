@@ -1,5 +1,6 @@
 // CSV 파일 경로
-const csvFilePath = 'generated_images/current_data.csv';
+//const csvFilePath = 'generated_images/current_data.csv';
+const csvFilePAth = 'test/generated_images/current_data.csv';
 // CSV 데이터를 가져오고 차트를 초기화
 fetch(csvFilePath)
   .then((response) => response.text())
