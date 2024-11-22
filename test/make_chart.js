@@ -1,5 +1,5 @@
 // CSV 파일 경로
-const csvFilePath = 'test/generated_images/current_data.csv';
+const csvFilePath = 'generated_images/current_data.csv';
 // CSV 데이터를 가져오고 차트를 초기화
 fetch(csvFilePath)
   .then((response) => response.text())
@@ -55,6 +55,7 @@ function initializeChart(labels, dataPoints) {
             borderColor: 'rgba(75, 192, 192, 1)',
             backgroundColor: 'rgba(75, 192, 192, 0.2)',
             tension: 0.4, // 곡선 정도
+              pointRadius: 0,
           },
           // {
           //   label: 'Baseline (1 per step)', // 선형 기준선
@@ -70,6 +71,7 @@ function initializeChart(labels, dataPoints) {
             borderColor: 'rgba(255, 99, 132, 1)', // 파란색
             borderDash: [10, 5], // 점선
             fill: false,
+              pointRadius: 0,
           },
           {
             label: 'Safe_Line', // 저자극 직선
@@ -77,6 +79,7 @@ function initializeChart(labels, dataPoints) {
             borderColor: 'rgba(0, 128, 0, 1)', // 초록색
             borderDash: [10, 5], // 점선
             fill: false,
+              pointRadius: 0,
           },
         ],
       },
