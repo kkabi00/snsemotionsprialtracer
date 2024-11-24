@@ -1,5 +1,5 @@
-// CSV 파일 경로
-const csvFilePath = 'generated_images/current_data.csv';
+//const csvFilePath = 'generated_images/current_data.csv';
+const csvFilePAth = 'test/generated_images/current_data.csv';
 // CSV 데이터를 가져오고 차트를 초기화
 fetch(csvFilePath)
   .then((response) => response.text())
@@ -58,7 +58,7 @@ function initializeChart(labels, dataPoints) {
             backgroundColor: 'rgba(75, 192, 192, 0.2)',
             tension: 0.4, // 곡선 정도
             borderWidth: 2,
-            pointRadius: 1,
+            pointRadius: 0,
             pointHoverTadius: 3, // 마우스 호버 시 점 크기 상승
           },
           // {
@@ -78,6 +78,7 @@ function initializeChart(labels, dataPoints) {
             tension: 0, // 직선
             pointRadius: 0, // 점을 표시하지 않음
             fill: false,
+              pointRadius: 0, // 점 제거
           },
           {
             label: 'Safe_Line', // 저자극 직선
@@ -88,6 +89,7 @@ function initializeChart(labels, dataPoints) {
             tension: 0, // 직선
             pointRadius: 0, // 점을 표시하지 않음
             fill: false,
+              pointRadius: 0, // 점 제거
           },
         ],
       },
