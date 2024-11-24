@@ -1,5 +1,5 @@
 // CSV 파일 경로
-const csvFilePath = 'test/generated_images/current_data.csv';
+const csvFilePath = 'generated_images/current_data.csv';
 // CSV 데이터를 가져오고 차트를 초기화
 fetch(csvFilePath)
   .then((response) => response.text())
@@ -21,13 +21,15 @@ fetch(csvFilePath)
   })
   .catch((error) => console.error('Error loading CSV data:', error));
 
+// main.html로 들어갈 배경색
+let bgColor = 'white';
 // Chart.js를 설정하는 함수
 function initializeChart(labels, dataPoints) {
     const ctx = document.getElementById('myChart').getContext('2d');
 
     // X축과 Y축 여유 공간 계산
     const xMax = Math.ceil(Math.max(...labels.map((x) => parseFloat(x))) / 100) * 100 + 300;
-    const yMax = Math.ceil(Math.max(...dataPoints) / 100) * 100 + 300;
+    const yMax = Math.ceil(Math.max(...dataPoints) / 100) * 100 + 500;
 
     // Base line 생성: start_score + i (i는 증가하는 인덱스)
     // const baseLine = Array.from({ length: labels.length }, (_, i) => i);
@@ -55,6 +57,9 @@ function initializeChart(labels, dataPoints) {
             borderColor: 'rgba(75, 192, 192, 1)',
             backgroundColor: 'rgba(75, 192, 192, 0.2)',
             tension: 0.4, // 곡선 정도
+            borderWidth: 2,
+            pointRadius: 1,
+            pointHoverTadius: 3, // 마우스 호버 시 점 크기 상승
           },
           // {
           //   label: 'Baseline (1 per step)', // 선형 기준선
@@ -68,14 +73,20 @@ function initializeChart(labels, dataPoints) {
             label: 'Danger_Line', // 고자극 직선
             data: line1, // 계산된 직선 데이터
             borderColor: 'rgba(255, 99, 132, 1)', // 파란색
-            borderDash: [10, 5], // 점선
+            //borderDash: [10, 5], // 점선
+            borderWidth: 3, // 선의 두께
+            tension: 0, // 직선
+            pointRadius: 0, // 점을 표시하지 않음
             fill: false,
           },
           {
             label: 'Safe_Line', // 저자극 직선
             data: line2, // 계산된 직선 데이터
             borderColor: 'rgba(0, 128, 0, 1)', // 초록색
-            borderDash: [10, 5], // 점선
+            //borderDash: [10, 5], // 점선
+            borderWidth: 3, // 선의 두께
+            tension: 0, // 직선
+            pointRadius: 0, // 점을 표시하지 않음
             fill: false,
           },
         ],
@@ -112,7 +123,60 @@ function initializeChart(labels, dataPoints) {
           },
         },
       },
+      plugins: [
+        {
+          id: 'backgroundColor',
+          beforeDraw: (chart) => {
+            const ctx = chart.ctx;
+            const chartArea = chart.chartArea;
+            const xScale = chart.scales.x;
+            const yScale = chart.scales.y;
+
+            // x축 데이터
+            const data = chart.data.datasets[0].data;
+            const dangerLineData = chart.data.datasets[1].data;
+            const safeLineData = chart.data.datasets[2].data;
+
+            ctx.save();
+            // main.html로 들어갈 배경색
+            //let bgColor = 'white';
+
+            // 각 데이터 포인터 확인
+            data.forEach((point, index) => {
+              //const xValue = xScale.getPixelForValue(index); // x좌표
+              //const yValue = yScale.getPixelForValue(point); // y좌표
+
+              // 1시간이 지난 후
+              if (labels[index] >= 3600) {
+                const dangerValue = dangerLineData[index];
+                const safeValue = safeLineData[index];
+                // 중간값
+                const midValue = (dangerValue + safeValue) / 2;
+
+                // 배경 색상 선택
+                if (point > midValue && point < dangerValue) {
+                  bgColor = 'rgba(255, 255, 0, 0.2)'; // 노란색
+                } else if (point >= dangerValue) {
+                  bgColor = 'rgba(255, 0, 0, 0.2)'; // 빨간색
+                } else {
+                  bgColor = 'rgba(0, 255, 0, 0.2)'; // 초록색
+                }
+                // HTML에 배경색 전달
+                document.body.style.backgroundColor = bgColor;
+                // 배경 색상 적용
+                ctx.fillStyle = bgColor;
+                ctx.fillRect(
+                  xScale.getPixelForValue(labels[index - 1]),
+                  chartArea.top,
+                  xScale.getPixelForValue(labels[index - 1]) - xScale.getPixelForValue(labels[index - 1]),
+                  chartArea.bottom - chartArea.top
+                );
+              }
+            });
+            ctx.restore();
+          }
+        }
+      ]
     };
-  
     new Chart(ctx, chartConfig);
 }
