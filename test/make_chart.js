@@ -1,5 +1,5 @@
 //const csvFilePath = 'generated_images/current_data.csv';
-const csvFilePAth = 'test/generated_images/current_data.csv';
+const csvFilePath = 'generated_images/current_data.csv';
 // CSV 데이터를 가져오고 차트를 초기화
 fetch(csvFilePath)
   .then((response) => response.text())
@@ -140,8 +140,6 @@ function initializeChart(labels, dataPoints) {
             const safeLineData = chart.data.datasets[2].data;
 
             ctx.save();
-            // main.html로 들어갈 배경색
-            //let bgColor = 'white';
 
             // 각 데이터 포인터 확인
             data.forEach((point, index) => {
@@ -160,6 +158,8 @@ function initializeChart(labels, dataPoints) {
                   bgColor = 'rgba(255, 255, 0, 0.2)'; // 노란색
                 } else if (point >= dangerValue) {
                   bgColor = 'rgba(255, 0, 0, 0.2)'; // 빨간색
+                } else if (labels[index] >= 14400) { // 4시간 경과시
+                  bgColor = 'rgba(255, 0, 0, 0.5)';// 빨간색
                 } else {
                   bgColor = 'rgba(0, 255, 0, 0.2)'; // 초록색
                 }
@@ -175,6 +175,19 @@ function initializeChart(labels, dataPoints) {
                 );
               }
             });
+            // 수직선 그리기
+            const lastIndex = labels.length - 1;
+            const lastXValue = xScale.getPixelForValue(labels[lastIndex]);
+
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+
+            ctx.beginPath();
+            ctx.moveTo(lastXValue, chartArea.top);
+            ctx.lineTo(lastXValue, chartArea.bottom);
+            ctx.stroke();
+
             ctx.restore();
           }
         }
