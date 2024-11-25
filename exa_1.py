@@ -288,15 +288,21 @@ def serve_image(filename):
     return send_file(os.path.join(OUTPUT_FOLDER, filename), mimetype='image/png')
 
 #csv data 서버 업로드용
-@app.route('/get_csv_data', methods=['GET'])
-def get_csv_data():
-    data = []
-    with open(CUMULATIVE_DATA_FILE2, newline='', encoding='utf-8') as csvfile:
-        csvreader = csv.DictReader(csvfile)
-        for row in csvreader:
-            data.append(row)
+@app.route('/get_csv', methods=['GET'])
+def get_csv():
+    file_name = request.args.get('file_name')
+    if not file_name:
+        return jsonify({"error": "File name not provided"}), 400
 
-    return jsonify(data)
+    file_path = os.path.join(OUTPUT_FOLDER, file_name)
+    if not os.path.exists(file_path):
+        return jsonify({"error": "File not found"}), 404
+
+    try:
+        # CSV 파일을 텍스트로 반환
+        return send_file(file_path, mimetype='text/csv')
+    except Exception as e:
+        return jsonify({"error": f"Failed to read the CSV file: {e}"}), 500
 
 
 # 서버 실행

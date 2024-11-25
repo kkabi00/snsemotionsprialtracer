@@ -1,4 +1,3 @@
-//const csvFilePath = 'generated_images/current_data.csv';
 const csvFilePath = 'generated_images/current_data.csv';
 // CSV 데이터를 가져오고 차트를 초기화
 fetch(csvFilePath)
@@ -31,15 +30,13 @@ function initializeChart(labels, dataPoints) {
     const xMax = Math.ceil(Math.max(...labels.map((x) => parseFloat(x))) / 100) * 100 + 300;
     const yMax = Math.ceil(Math.max(...dataPoints) / 100) * 100 + 500;
 
-    // Base line 생성: start_score + i (i는 증가하는 인덱스)
-    // const baseLine = Array.from({ length: labels.length }, (_, i) => i);
 
     // 기울기와 절편 설정 (Y = mx + c)
     // 고자극 선
-    const slope1 = (7000 - 0) / 14400; // Y = 7000, X = 14400
+    const slope1 = (7000 - 0) / 16000; // Y = 7000, X = 14400
     const intercept1 = 0; // Y절편 (c)
     // 저자극 선
-    const slope2 = (5000 - 0) / 14400; // Y = 5000, X = 14400
+    const slope2 = (5000 - 0) / 16000; // Y = 5000, X = 14400
     const intercept2 = 0; // Y절편 (c)
 
     // 직선 데이터 계산
@@ -61,14 +58,6 @@ function initializeChart(labels, dataPoints) {
             pointRadius: 0,
             pointHoverTadius: 3, // 마우스 호버 시 점 크기 상승
           },
-          // {
-          //   label: 'Baseline (1 per step)', // 선형 기준선
-          //   data: baseLine, // Base line 데이터
-          //   borderColor: 'rgba(255, 99, 132, 1)', // 빨간색
-          //   backgroundColor: 'rgba(255, 99, 132, 0.2)', // 투명한 빨간색
-          //   borderDash: [5, 5], // 점선
-          //   tension: 0, // 직선
-          // }
           {
             label: 'Danger_Line', // 고자극 직선
             data: line1, // 계산된 직선 데이터
@@ -78,7 +67,6 @@ function initializeChart(labels, dataPoints) {
             tension: 0, // 직선
             pointRadius: 0, // 점을 표시하지 않음
             fill: false,
-              pointRadius: 0, // 점 제거
           },
           {
             label: 'Safe_Line', // 저자극 직선
@@ -89,7 +77,6 @@ function initializeChart(labels, dataPoints) {
             tension: 0, // 직선
             pointRadius: 0, // 점을 표시하지 않음
             fill: false,
-              pointRadius: 0, // 점 제거
           },
         ],
       },
@@ -154,13 +141,13 @@ function initializeChart(labels, dataPoints) {
                 const midValue = (dangerValue + safeValue) / 2;
 
                 // 배경 색상 선택
-                if (point > midValue && point < dangerValue) {
+                 if (labels[index] >= 14400) { // 4시간 경과시
+                  bgColor = 'rgba(255, 0, 0, 0.5)';// 빨간색
+                 } else if (point > midValue && point < dangerValue) {
                   bgColor = 'rgba(255, 255, 0, 0.2)'; // 노란색
                 } else if (point >= dangerValue) {
                   bgColor = 'rgba(255, 0, 0, 0.2)'; // 빨간색
-                } else if (labels[index] >= 14400) { // 4시간 경과시
-                  bgColor = 'rgba(255, 0, 0, 0.5)';// 빨간색
-                } else {
+                }else {
                   bgColor = 'rgba(0, 255, 0, 0.2)'; // 초록색
                 }
                 // HTML에 배경색 전달
