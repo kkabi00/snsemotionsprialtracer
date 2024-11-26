@@ -30,21 +30,38 @@ fetch(`${serverUrl}?file_name=${fileName}`)
   .catch((error) => console.error('Error loading CSV data:', error));
 
 // 이벤트 리스너 등록
-document.addEventListener('click', (event) => {
-  // 클릭한 요소가 <a> 태그인지 확인
-  const target = event.target.closest('a'); // <a> 태그를 감지
-  if (target && target.href.includes(/\/watch/)) {
-    if (warningFlag) {
-      // 경고창 표시
-      const userConfirmed = confirm('위험 수치에 도달하였습니다. \n 정말 영상을 시청하시겠습니까?');
 
-      if (!userConfirmed) {
-        // 이동을 막음
-        event.preventDefault();
+// DOM이 로드된 후 실행 왜 작동이 안하지....................
+/*
+document.addEventListener("DOMContentLoaded", () => {
+  // 모든 썸네일 링크를 선택
+  const thumbnails = document.querySelectorAll('a#thumbnail');
+  console.log("DOM Load Complete!!!!!!!!!!!!!!!!")
+
+  thumbnails.forEach(thumbnail => {
+    thumbnail.addEventListener("click", event => {
+        console.log("event listen!!!!!!!!!!!!!")
+      if (warningFlag) {
+        event.preventDefault(); // 기본 이동 동작을 막음
+
+        // 확인 창 표시
+        const userConfirmed = confirm("위험 수치에 도달하였습니다. \n 정말 영상을 시청하시겠습니까?");
+
+        if (userConfirmed) {
+          // "확인" 클릭 시 영상 URL로 이동
+          window.location.href = thumbnail.href;
+        } else {
+          // "취소" 클릭 시 아무 작업도 하지 않음
+          console.log("사용자가 취소를 선택했습니다.");
+        }
+      } else {
+        // warningFlag가 false일 경우, 기본 동작 수행
+        console.log("경고창이 비활성화되어 바로 이동합니다.");
       }
-    }
-  }
+    });
+  });
 });
+*/
 
 function startObserving() {
     // 기존 observer가 있다면 중지
@@ -71,7 +88,6 @@ function startObserving() {
 
     observer.observe(document, { subtree: true, childList: true });
 
-    // Clean up observer and debounce on page unload
      window.addEventListener("beforeunload", () => {
         if (observer) observer.disconnect();
     });
