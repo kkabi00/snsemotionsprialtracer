@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Emotion Chart</title>
     <style>
+         html, body {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
         body {
             font-family: Arial, sans-serif;
             display: flex;
@@ -21,6 +26,7 @@
         #myChart {
             width: 100%;
             height: 100%;
+            
         }
     </style>
     <script src="scripts/chart.js"></script>
@@ -31,7 +37,7 @@
     <!-- 이미지 URL이 업데이트될 img 태그 -->
     <div id="emotionChart"></div>
     <canvas id="myChart"></canvas>
-    <button id="load-image">Load Image</button>
+    <!-- <button id="load-image">Load Image</button> -->
     <script src="make_chart.js"></script>
     <script src="main.js"></script>
 </body>
