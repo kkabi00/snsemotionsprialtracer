@@ -3,6 +3,7 @@ let observer;
 let labels;
 let sumDangerScores;
 let warningFlag = false; // 플래그 활성화 여부 설정
+let bgColor = 'lightblue';
 const serverUrl = 'http://127.0.0.1:5000/get_csv';
 const fileName = 'current_data.csv'; // 서버에 저장된 파일 이름
 
@@ -77,8 +78,8 @@ function startObserving() {
                 console.log("Detected new URL:", currentUrl);
                 chrome.runtime.sendMessage({ type: "URL_CHANGED", url: currentUrl });
 
-                addDynamicStyles();
-                addCustomDiv();
+                const chartCanvas = initializeChart(labels, sumDangerScores);
+                addCustomDiv(chartCanvas);
 
             } catch (error) {
                 console.error("Failed to send message:", error);
@@ -114,7 +115,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 });
 function addDynamicStyles() {
-    if (!document.getElementById('custom-style')) {
+    if (document.getElementById('custom-style')) {
+        document.getElementById('custom-style').remove();
+    }
         const styleTag = document.createElement('style');
         styleTag.id = 'custom-style';
         styleTag.textContent = `
@@ -122,7 +125,7 @@ function addDynamicStyles() {
                 display: flex;           /* Flexbox 사용 */
                 justify-content: center; /* 가로 중앙 정렬 */
                 align-items: center;     /* 세로 중앙 정렬 */
-                background-color: lightblue; /* 배경색 */
+                background-color: ${bgColor}; /* 배경색 */
                 padding: 10px;          /* 내부 여백 */
                 margin: 0px;            /* 외부 여백 */
                 border: 2px solid blue; /* 테두리 */
@@ -198,12 +201,10 @@ function addDynamicStyles() {
         `;
         document.head.appendChild(styleTag);
         console.log('Style dynamically added.');
-    } else {
-        console.log('Style already exists.');
-    }
+
 }
 
-function addCustomDiv() {
+function addCustomDiv(chartCanvas) {
     const secondaryDiv = document.querySelector('div#secondary.style-scope.ytd-watch-flexy');
     if (secondaryDiv) {
         if (!document.getElementById('custom-div')) {
@@ -224,9 +225,8 @@ function addCustomDiv() {
             const additionalInfo = document.createElement('div');
             additionalInfo.id = 'additional-info';
 
-            const canvas = document.createElement('canvas');
-            canvas.id = 'myChart';
-            additionalInfo.appendChild(canvas);
+            //chart 추가
+            additionalInfo.appendChild(chartCanvas);
 
             // "오늘의 보고서" 버튼 추가
             const reportButton = document.createElement('button');
@@ -253,11 +253,6 @@ function addCustomDiv() {
             // Secondary div에 추가
             secondaryDiv.prepend(newDiv);
             console.log('Custom div successfully added.');
-            if (labels && sumDangerScores) {
-                initializeChart(labels, sumDangerScores);
-            } else {
-                console.error("Chart data is not initialized yet.");
-            }
         } else {
             console.log('Custom div already exists.');
         }
@@ -268,11 +263,12 @@ function addCustomDiv() {
 
 
 
-// main.html로 들어갈 배경색
-let bgColor = 'white';
 // Chart.js를 설정하는 함수
 function initializeChart(labels, dataPoints) {
-    const ctx = document.getElementById('myChart').getContext('2d');
+
+    const canvas = document.createElement('canvas');
+    canvas.id = 'myChart';
+    const ctx = canvas.getContext('2d');
 
     // X축과 Y축 여유 공간 계산
     const xMax = Math.ceil(Math.max(...labels.map((x) => parseFloat(x))) / 100) * 100 + 300;
@@ -354,7 +350,6 @@ function initializeChart(labels, dataPoints) {
             const ctx = chart.ctx;
             const chartArea = chart.chartArea;
             const xScale = chart.scales.x;
-            const yScale = chart.scales.y;
 
             // x축 데이터
             const data = chart.data.datasets[0].data;
@@ -377,29 +372,23 @@ function initializeChart(labels, dataPoints) {
 
                 // 배경 색상 선택
                  if (labels[index] >= 14400) { // 4시간 경과시
-                  bgColor = 'rgba(255, 0, 0, 0.5)';// 빨간색
+                  bgColor = 'red';// 빨간색
                   warningFlag = true;
                  } else if (point > midValue && point < dangerValue) {
-                  bgColor = 'rgba(255, 255, 0, 0.2)'; // 노란색
+                  bgColor = 'gold'; // 노란색
                      warningFlag = false;
                 } else if (point >= dangerValue) {
-                  bgColor = 'rgba(255, 0, 0, 0.2)'; // 빨간색
+                  bgColor = 'salmon'; // 빨간색
                   warningFlag = true;
                 } else {
-                  bgColor = 'rgba(0, 255, 0, 0.2)'; // 초록색
+                  bgColor = 'lightblue';
                 }
-                // HTML에 배경색 전달
-                document.body.style.backgroundColor = bgColor;
-                // 배경 색상 적용
-                ctx.fillStyle = bgColor;
-                ctx.fillRect(
-                  xScale.getPixelForValue(labels[index - 1]),
-                  chartArea.top,
-                  xScale.getPixelForValue(labels[index - 1]) - xScale.getPixelForValue(labels[index - 1]),
-                  chartArea.bottom - chartArea.top
-                );
               }
+
             });
+
+            console.log(bgColor,'in chart');
+            addDynamicStyles();
             // 수직선 그리기
             const lastIndex = labels.length - 1;
             const lastXValue = xScale.getPixelForValue(labels[lastIndex]);
@@ -419,6 +408,8 @@ function initializeChart(labels, dataPoints) {
       ]
     };
     new Chart(ctx, chartConfig);
+
+    return canvas;
 }
 
 
