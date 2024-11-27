@@ -3,37 +3,41 @@ let observer;
 let labels;
 let sumDangerScores;
 let warningFlag = false; // 플래그 활성화 여부 설정
+let deadFlag = false;
 let bgColor = 'lightblue';
 const serverUrl = 'http://127.0.0.1:5000/get_csv';
 const fileName = 'current_data.csv'; // 서버에 저장된 파일 이름
 
 // 서버에서 CSV 데이터를 불러오는 함수
-fetch(`${serverUrl}?file_name=${fileName}`)
-  .then((response) => {
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-    return response.text(); // CSV 데이터를 텍스트로 변환
-  })
-  .then((csvData) => {
-    // PapaParse로 CSV 데이터를 파싱
-    const parsedData = Papa.parse(csvData, {
-      header: true,
-      skipEmptyLines: true,
-    }).data;
+  function fetchData() {
+    fetch(`${serverUrl}?file_name=${fileName}`)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.text(); // CSV 데이터를 텍스트로 변환
+      })
+      .then((csvData) => {
+        // PapaParse로 CSV 데이터를 파싱
+        const parsedData = Papa.parse(csvData, {
+          header: true,
+          skipEmptyLines: true,
+        }).data;
 
-    // start_time과 sum_danger_score 데이터를 추출
-    labels = parsedData.map((row) => row.start_time);
-    sumDangerScores = parsedData.map((row) =>
-      parseFloat(row.sum_danger_score)
-    );
-  })
-  .catch((error) => console.error('Error loading CSV data:', error));
+        // start_time과 sum_danger_score 데이터를 추출
+        labels = parsedData.map((row) => row.start_time);
+        sumDangerScores = parsedData.map((row) =>
+          parseFloat(row.sum_danger_score)
+        );
 
+      })
+      .catch((error) => console.error('Error loading CSV data:', error));
+  }
+
+  // 최초 데이터 가져오기
+  fetchData();
 // 이벤트 리스너 등록
 
-// DOM이 로드된 후 실행 왜 작동이 안하지....................
-/*
 document.addEventListener("DOMContentLoaded", () => {
   // 모든 썸네일 링크를 선택
   const thumbnails = document.querySelectorAll('a#thumbnail');
@@ -62,7 +66,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 });
-*/
+
 
 function startObserving() {
     // 기존 observer가 있다면 중지
@@ -71,19 +75,49 @@ function startObserving() {
     }
 
     observer = new MutationObserver(() => {
+        console.log(warningFlag);
         const currentUrl = location.href;
+        const chartCanvas = initializeChart(labels, sumDangerScores);
         if (currentUrl !== lastUrl && currentUrl.match(/youtube\.com\/watch\?v=/)) {
-            lastUrl = currentUrl;
+            if (warningFlag) {
+                const userConfirmed = confirm("경고: 감정 수치가 위험 수치에 도달하였습니다.\n영상 시청에 유의가 필요합니다.\n정말 이 영상을 시청하시겠습니까?");
+                if (!userConfirmed) {
+                    window.location.href = "https://www.youtube.com";
+                }
+                else{
+                    lastUrl = currentUrl;
             try {
+                fetchData();
                 console.log("Detected new URL:", currentUrl);
                 chrome.runtime.sendMessage({ type: "URL_CHANGED", url: currentUrl });
-
-                const chartCanvas = initializeChart(labels, sumDangerScores);
                 addCustomDiv(chartCanvas);
 
             } catch (error) {
                 console.error("Failed to send message:", error);
             }
+                }
+            }
+            else if(deadFlag){
+                const userConfirmed = confirm("!위험! \n시청시간이 4시간 초과 하였습니다.\n");
+                if (!userConfirmed) {
+                    window.location.href = "https://www.youtube.com";
+                }
+                else{
+                    window.location.href = "https://image.newsis.com/2024/11/01/NISI20241101_0001692358_web.jpg?rnd=20241101152014";
+                }
+            }
+            else{
+            lastUrl = currentUrl;
+            try {
+                fetchData();
+                console.log("Detected new URL:", currentUrl);
+                chrome.runtime.sendMessage({ type: "URL_CHANGED", url: currentUrl });
+                addCustomDiv(chartCanvas);
+
+            } catch (error) {
+                console.error("Failed to send message:", error);
+            }
+        }
         }
     });
 
@@ -373,7 +407,8 @@ function initializeChart(labels, dataPoints) {
                 // 배경 색상 선택
                  if (labels[index] >= 14400) { // 4시간 경과시
                   bgColor = 'red';// 빨간색
-                  warningFlag = true;
+                  warningFlag = false;
+                  deadFlag = true;
                  } else if (point > midValue && point < dangerValue) {
                   bgColor = 'gold'; // 노란색
                      warningFlag = false;
@@ -387,7 +422,6 @@ function initializeChart(labels, dataPoints) {
 
             });
 
-            console.log(bgColor,'in chart');
             addDynamicStyles();
             // 수직선 그리기
             const lastIndex = labels.length - 1;
@@ -417,3 +451,4 @@ function initializeChart(labels, dataPoints) {
 // alert 추가
 // 페이지가 로드될 때 URL 변경 감시 시작
 startObserving();
+const intervalMs = 180000;
