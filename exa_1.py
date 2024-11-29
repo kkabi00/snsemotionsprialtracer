@@ -1,4 +1,9 @@
 #non-kiwi ver
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+import numpy as np
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import re
@@ -11,15 +16,15 @@ from transformers import AutoTokenizer, AutoModelForTokenClassification, pipelin
 # from kiwipiepy import Kiwi
 import os
 from datetime import datetime
-import signal  # 수정 부분
-import sys     # 수정 부분
+import signal  
+import sys     
 import csv #csv 업로드
 
 app = Flask(__name__)
 CORS(app)
 # 누적 데이터 파일 경로
-CUMULATIVE_DATA_FILE = 'test/generated_images/cumulative_data.csv'  # 수정 부분
-CUMULATIVE_DATA_FILE2 = 'test/generated_images/current_data.csv'    # 수정 부분
+CUMULATIVE_DATA_FILE = 'test/generated_images/cumulative_data.csv'  
+CUMULATIVE_DATA_FILE2 = 'test/generated_images/current_data.csv'
 # 이미지 폴더 설정
 OUTPUT_FOLDER = "test/generated_images"
 if not os.path.exists(OUTPUT_FOLDER):
@@ -109,7 +114,7 @@ def load_cumulative_data():
         print("데이터 파일 없음")
         return 0, 0
     
-def save_current_data(df): # 수정 부분
+def save_current_data(df):
     file_path = os.path.join(OUTPUT_FOLDER, 'current_data.csv')
     if os.path.exists(file_path):
         df.to_csv(file_path, mode='a', header=False, index=False)
@@ -124,8 +129,8 @@ def save_cumulative_data(sum_danger_score, elapsed_time, video_id, output_folder
 
     data = pd.DataFrame([{
         'video_id': video_id,
-        'sum_danger_score': round(sum_danger_score, 2),  # 수정 부분
-        'elapsed_time': round(total_elapsed_time, 2),    # 수정 부분
+        'sum_danger_score': round(sum_danger_score, 2),  
+        'elapsed_time': round(total_elapsed_time, 2),    
         'addiction_rate': f"{addiction_rate_percentage:.2f}%"
     }])
 
@@ -134,41 +139,93 @@ def save_cumulative_data(sum_danger_score, elapsed_time, video_id, output_folder
         data.to_csv(file_path, mode='a', header=False, index=False)
     else:
         data.to_csv(file_path, index=False)
-            
-def plot_sum_danger_score_over_time(output_folder): # 수정 부분
-    """시간에 따른 sum_danger_score를 시각화, 증가율이 1인 기준선 전경 추가"""
-    plt.figure(figsize=(12, 6))
-    df1 = pd.read_csv(CUMULATIVE_DATA_FILE)
-    df2 = pd.read_csv(CUMULATIVE_DATA_FILE2)
-    # 누적된 sum_danger_score 그래프
-    plt.plot(df2['start_time'], df2['sum_danger_score'], marker='o', linestyle='-', label='Sum Danger Score')
-    
-    # 기준선 (증가율이 1, 시작점은 첫 영상의 시작 sum danger score)
-    start_score = df2['sum_danger_score'].iloc[0]  # 첫 sum danger score 값을 기준으로 설정
-    base_line = [start_score + i for i in range(len(df2))]  # 증가율이 1인 선형 기준선
-    plt.plot(df2['start_time'], base_line, linestyle='--', color='red', label='Baseline (1 per step)')
-    
-    # x축과 y축의 범위 고정
-    # plt.xlim(left=0, right=15000)  # x축 범위 (0에서 15000까지 고정)
-    # plt.ylim(bottom=0, top=4000)  # y축 범위 (0에서 4000까지 고정)
 
-    # x축과 y축의 동적 할당(wonderful)
-    plt.xlim(left=0, right=df1['elapsed_time'].iloc[-1]+300)
-    plt.ylim(bottom=0, top=df1['sum_danger_score'].iloc[-1]+300)
+model = None
+scaler_X = None
+scaler_Y = None
 
-    # 그래프 설정
+def regression_results():
+    global model, scaler_X, scaler_Y
+    df1 = pd.read_csv(CUMULATIVE_DATA_FILE2)
+    df2 = pd.read_csv('test/generated_images/dataset.csv')  #딥러닝 시킬 데이터 경로 직접 따로 추가
+    
+    X = np.array(df2['start_time']) 
+    Y = np.array(df2['sum_danger_score'])
+
+    # 데이터 정규화
+    scaler_X = StandardScaler()
+    X_scaled = scaler_X.fit_transform(X.reshape(-1, 1)) 
+
+    scaler_Y = StandardScaler()
+    Y_scaled = scaler_Y.fit_transform(Y.reshape(-1, 1)) 
+
+    # 데이터 분할 
+    X_train, X_val, Y_train, Y_val = train_test_split(X_scaled, Y_scaled, test_size=0.2, random_state=42)
+
+    # 모델 정의
+    model = Sequential([
+        Dense(128, input_dim=1, activation='relu'), 
+        Dense(64, activation='relu'),
+        Dense(64, activation='relu'),
+        Dense(1) 
+    ])
+
+    # 모델 컴파일
+    model.compile(optimizer='adam', loss='mse')
+
+    # 모델 학습
+    model.fit(X_train, Y_train, epochs=50, batch_size=32, validation_data=(X_val, Y_val)) 
+
+def plot_sum_danger_score_over_time(output_folder): 
+    global model, scaler_X, scaler_Y
+
+    df = pd.read_csv(CUMULATIVE_DATA_FILE)
+    df1 = pd.read_csv(CUMULATIVE_DATA_FILE2)
+
+    # 예측값 생성
+    x1 = np.array(df1['start_time']) 
+    x1_scaled = scaler_X.transform(x1.reshape(-1, 1))
+
+    predicted_scores = model.predict(x1_scaled)
+    
+    # 예측된 값을 원래의 scale로 변환
+    predicted_scores_original = scaler_Y.inverse_transform(predicted_scores)
+
+    # 새로운 베이스라인 생성
+    new_base_line = predicted_scores_original.flatten() 
+    data = pd.DataFrame([{
+    'start_time': x1[i],
+    'sum_danger_score': new_base_line[i]
+    } for i in range(len(x1))])
+
+    file_path = os.path.join(OUTPUT_FOLDER, 'mlp_data.csv')
+    if os.path.exists(file_path):
+        data.to_csv(file_path, mode='a', header=False, index=False, float_format='%.2f')
+    else:
+        data.to_csv(file_path, index=False, float_format='%.2f')
+
+    # 기존 그래프에 새로운 베이스라인 추가
+    plt.plot(df1['start_time'], df1['sum_danger_score'], marker='o', linestyle='-', label='Sum Danger Score')
+    plt.plot(df1['start_time'], new_base_line, linestyle='--', color='red', label='Predicted Baseline')
+
+    # x축과 y축의 동적 할당
+    plt.xlim(left=0, right=df['elapsed_time'].iloc[-1]+200) 
+    plt.ylim(bottom=0, top=df['sum_danger_score'].iloc[-1]+200)
+
     plt.title('Sum Danger Score Over Elapsed Time with Baseline')
     plt.xlabel('Elapsed Time (s)')
     plt.ylabel('Sum Danger Score')
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
-    
-    # 이미지 저장
-    image_path = os.path.join(output_folder, 'test.png')
+
+    image_path = os.path.join(OUTPUT_FOLDER, 'test.png')
     plt.savefig(image_path)
     plt.close()
     print(f"Plot saved to {image_path}")
+
+    # loss = model.evaluate(x1_scaled, y1_scaled)
+    # print(f'Model Loss: {loss}')
 
 # def save_to_excel(analysis_data, video_id, output_folder):
 #     """문장별 감정 분석 결과: 엑셀화"""
@@ -194,7 +251,7 @@ def process_url():
     image_path = create_image_from_url(youtube_url)
     
     # 이미지의 URL을 확장 프로그램에 반환
-    return jsonify({"image_url": f"{image_path}"})
+    # return jsonify({"image_url": f"{image_path}"})
 
 def create_image_from_url(url):
     image_filename = "sum_danger_score_plot_with_baseline.png"  # 예시 파일 이름
@@ -217,7 +274,7 @@ def create_image_from_url(url):
     if transcript:
         sentences = ([item['text'] for item in transcript])
 
-        if os.path.exists(CUMULATIVE_DATA_FILE2): # 수정 부분
+        if os.path.exists(CUMULATIVE_DATA_FILE2): 
             df2 = pd.read_csv(CUMULATIVE_DATA_FILE2) 
             last_start_time = df2['start_time'].iloc[-1]
         else:
@@ -228,19 +285,19 @@ def create_image_from_url(url):
             
             print(f"\nAnalyzing text: {sentence}")
             
-            start_time_in_seconds = last_start_time + transcript[i]['start'] # 수정 부분
+            start_time_in_seconds = last_start_time + transcript[i]['start'] 
 
             # 감정 분석 수행
             results = emotion_analysis(sentence)
 
-            aggregated_scores = aggregate_emotion_scores(results) # 수정 부분
+            aggregated_scores = aggregate_emotion_scores(results) 
             sentence_danger_score = sum(
                 risk_scores.get(emotion, 1.0) for emotion, score in aggregated_scores.items() if score >= 0.5
             )
             cumulative_sum_danger_score += sentence_danger_score
 
             analysis_data.append({ 
-                'start_time': round(start_time_in_seconds, 2), # 수정 부분
+                'start_time': round(start_time_in_seconds, 2),
                 #'sentences': sentence, # 준영수정 아래 필요없는 부분 처리함
                 #'emotions': ', '.join(aggregated_scores.keys()),
                 #'scores': ', '.join([f"{score:.2f}" for score in aggregated_scores.values()]),
@@ -271,7 +328,7 @@ def create_image_from_url(url):
 
         # 누적 시청 시간을 분 초 형태로 포맷팅하여 출력
         formatted_time = format_time_in_minutes_and_seconds(cumulative_elapsed_time)
-        print(f"\n누적 시청 시간: {formatted_time}") #오류 다소 있음
+        print(f"\n누적 시청 시간: {formatted_time}") 
         print(f"누적 위험 지수: {round(cumulative_sum_danger_score, 2)}")
         return f"{OUTPUT_FOLDER}/{image_filename}"
     else:
@@ -283,9 +340,9 @@ def signal_handler(sig, frame):
     sys.exit(0)    
     
 # 정적 파일 서빙을 위한 경로
-@app.route('/generated_images/<filename>')
-def serve_image(filename):
-    return send_file(os.path.join(OUTPUT_FOLDER, filename), mimetype='image/png')
+# @app.route('/generated_images/<filename>')
+# def serve_image(filename):
+#     return send_file(os.path.join(OUTPUT_FOLDER, filename), mimetype='image/png')
 
 #csv data 서버 업로드용
 @app.route('/get_csv', methods=['GET'])
@@ -308,4 +365,7 @@ def get_csv():
 # 서버 실행
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal_handler)
+    print("모델 학습 시작...")
+    regression_results() 
+    print("모델 학습 완료.") 
     app.run(debug=True, use_reloader=False)  
