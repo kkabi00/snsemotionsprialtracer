@@ -9,16 +9,14 @@ from flask_cors import CORS
 import re
 import pandas as pd
 import matplotlib 
-matplotlib.use('Agg')  # 수정 부분  
-import matplotlib.pyplot as plt  # 수정 부분
+matplotlib.use('Agg') 
+import matplotlib.pyplot as plt 
 from youtube_transcript_api import YouTubeTranscriptApi
 from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
-# from kiwipiepy import Kiwi
 import os
 from datetime import datetime
 import signal  
 import sys     
-import csv #csv 업로드
 
 app = Flask(__name__)
 CORS(app)
@@ -69,18 +67,9 @@ def emotion_analysis(text):
 
     return nlp(text)
 
-def split_into_sentences(text):
-    """Kiwi 사용, 텍스트를 문장 단위로 분리"""
-    # kiwi = Kiwi()
-    # sentences = [sentence.text for sentence in kiwi.split_into_sents(text)] # type: ignore
-    sentences = text.split(',')
-    return sentences
-
 def aggregate_emotion_scores(results): 
     """감정 분석 결과 문장 단위로 합산, 0.5 이상인 감정의 over_half_score 필드 처리"""
-    #최종 결과에 over_half_score 필드 더이상 불필요하므로 제거
     emotion_scores = {}
-    # over_half_scores = {} # 수정 부분
 
     for result in results:
         emotion = result['entity_group']
@@ -89,9 +78,6 @@ def aggregate_emotion_scores(results):
             emotion_scores[emotion] += score
         else:
             emotion_scores[emotion] = score
-
-    # for emotion, score in emotion_scores.items(): # 수정 부분
-    #     over_half_scores[emotion] = 1 if score >= 0.5 else 0  # 수정 부분
 
     return emotion_scores
 
@@ -146,7 +132,7 @@ scaler_Y = None
 
 def regression_results():
     global model, scaler_X, scaler_Y
-    df2 = pd.read_csv('dataset.csv')  #딥러닝 시킬 데이터 경로 직접 따로 추가
+    df2 = pd.read_csv('dataset.csv')  
     
     X = np.array(df2['start_time']) 
     Y = np.array(df2['sum_danger_score'])
@@ -220,18 +206,6 @@ def plot_sum_danger_score_over_time(output_folder):
     plt.close()
     print(f"Plot saved to {image_path}")
 
-    # loss = model.evaluate(x1_scaled, y1_scaled)
-    # print(f'Model Loss: {loss}')
-
-# def save_to_excel(analysis_data, video_id, output_folder):
-#     """문장별 감정 분석 결과: 엑셀화"""
-#     df_analysis = pd.DataFrame(analysis_data)
-#     df_analysis['sum_danger_score'] = df_analysis['sentence_danger_score'].cumsum()
-
-#     excel_filename = os.path.join(output_folder, f"emotion_analysis_{video_id}.xlsx")
-#     df_analysis.to_excel(excel_filename, sheet_name="Sentence Analysis", index=False)
-#     print(f"\n저장 완료: {excel_filename}")
-
 def format_time_in_minutes_and_seconds(time_in_minutes):
     """시간 포맷팅."""
     minutes = int(time_in_minutes)
@@ -252,10 +226,8 @@ def process_url():
 def create_image_from_url(url):
     image_filename = "sum_danger_score_plot_with_baseline.png"  # 예시 파일 이름
     image_path = os.path.join(OUTPUT_FOLDER, image_filename)
-    #output_folder = get_output_folder("user_name")
     cumulative_sum_danger_score, cumulative_elapsed_time = load_cumulative_data()
     
-    #youtube_url = input("YouTube URL 입력 (종료하려면 'exit' 입력): ")
     youtube_url = url
     if youtube_url.lower() == 'exit':
         print("누적 데이터를 시각화 및 프로그램 자동 종료")
@@ -305,13 +277,6 @@ def create_image_from_url(url):
         last_sentence_start_time = transcript[-1]['start']  # 초 단위
         last_sentence_length_estimate = len(transcript[-1]['text']) / 100  # 문장의 길이를 시간으로 변환 (추정치) 
         video_total_time = last_sentence_start_time + last_sentence_length_estimate  # 초 단위 
-        
-        # 추가
-        # total_sentences = len(transcript)
-        # for i, sentence in enumerate(analysis_data):
-        # # 각 문장의 시작 시간을 비디오 시간에 맞게 균등 분배
-        # start_time_in_seconds = (video_total_time / total_sentences) * (i + 1)
-        # sentence['start_time'] = round(start_time_in_seconds, 2)
         
         df_analysis = pd.DataFrame(analysis_data)
         save_current_data(df_analysis) # 수정 부분
