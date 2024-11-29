@@ -2,24 +2,28 @@ let lastUrl = location.href;
 let observer;
 let labels;
 let sumDangerScores;
+let mlpDangerScores;
 let warningFlag = false; // 플래그 활성화 여부 설정
 let deadFlag = false;
 let bgColor = 'lightblue';
 const serverUrl = 'http://127.0.0.1:5000/get_csv';
-const fileName = 'current_data.csv'; // 서버에 저장된 파일 이름
+const fileName1 = 'current_data.csv'; // 서버에 저장된 파일 이름
+const fileName2 = 'mlp_data.csv';
 
 // 서버에서 CSV 데이터를 불러오는 함수
   function fetchData() {
-    fetch(`${serverUrl}?file_name=${fileName}`)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        return response.text(); // CSV 데이터를 텍스트로 변환
-      })
-      .then((csvData) => {
+    Promise.all([
+      fetch(`${serverUrl}?file_name=${fileName1}`).then((response) => response.text()),
+      fetch(`${serverUrl}?file_name=${fileName2}`).then((response) => response.text())
+    ]) 
+      .then(([csvData, mlpData]) => {
         // PapaParse로 CSV 데이터를 파싱
         const parsedData = Papa.parse(csvData, {
+          header: true,
+          skipEmptyLines: true,
+        }).data;
+        
+        const mlpParsedData = Papa.parse(mlpData, {
           header: true,
           skipEmptyLines: true,
         }).data;
@@ -28,6 +32,10 @@ const fileName = 'current_data.csv'; // 서버에 저장된 파일 이름
         labels = parsedData.map((row) => row.start_time);
         sumDangerScores = parsedData.map((row) =>
           parseFloat(row.sum_danger_score)
+        );
+
+        mlpDangerScores = mlpParsedData.map((row) =>
+          parseFloat(row.sum_danger_score) 
         );
 
       })
@@ -77,7 +85,7 @@ function startObserving() {
     observer = new MutationObserver(() => {
         console.log(warningFlag);
         const currentUrl = location.href;
-        const chartCanvas = initializeChart(labels, sumDangerScores);
+        const chartCanvas = initializeChart(labels, sumDangerScores, mlpDangerScores);
         if (currentUrl !== lastUrl && currentUrl.match(/youtube\.com\/watch\?v=/)) {
             if (warningFlag) {
                 const userConfirmed = confirm("경고: 감정 수치가 위험 수치에 도달하였습니다.\n영상 시청에 유의가 필요합니다.\n정말 이 영상을 시청하시겠습니까?");
@@ -298,7 +306,7 @@ function addCustomDiv(chartCanvas) {
 
 
 // Chart.js를 설정하는 함수
-function initializeChart(labels, dataPoints) {
+function initializeChart(labels, dataPoints, mlpDataPoints) {
 
     const canvas = document.createElement('canvas');
     canvas.id = 'myChart';
@@ -341,7 +349,7 @@ function initializeChart(labels, dataPoints) {
             data: line1, // 계산된 직선 데이터
             borderColor: 'rgba(255, 99, 132, 1)', // 파란색
             //borderDash: [10, 5], // 점선
-            borderWidth: 3, // 선의 두께
+            borderWidth: 4, // 선의 두께
             tension: 0, // 직선
             pointRadius: 0, // 점을 표시하지 않음
             fill: false,
@@ -351,11 +359,21 @@ function initializeChart(labels, dataPoints) {
             data: line2, // 계산된 직선 데이터
             borderColor: 'rgba(0, 128, 0, 1)', // 초록색
             //borderDash: [10, 5], // 점선
-            borderWidth: 3, // 선의 두께
+            borderWidth: 4, // 선의 두께
             tension: 0, // 직선
             pointRadius: 0, // 점을 표시하지 않음
             fill: false,
           },
+          {
+            label: 'Predicted Baseline', // mlp 데이터셋 추가
+            data: mlpDataPoints, // mlp 데이터의 danger_score 값
+            borderColor: 'rgba(54, 54, 54, 0.3)', 
+            backgroundColor: 'rgba(255, 159, 64, 0.2)',
+            tension: 0.4, // 곡선 정도
+            borderWidth: 3,
+            pointRadius: 0,
+            pointHoverRadius: 3, // 마우스 호버 시 점 크기 상승
+          }, 
         ],
       },
       options: {
