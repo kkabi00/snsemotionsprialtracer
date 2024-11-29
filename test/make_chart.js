@@ -67,7 +67,7 @@ function initializeChart(labels, dataPoints, mlpDataPoints) {
             borderColor: 'rgba(75, 192, 192, 1)',
             backgroundColor: 'rgba(75, 192, 192, 0.2)',
             tension: 0.4, // 곡선 정도
-            borderWidth: 2,
+            borderWidth: 3,
             pointRadius: 0,
             pointHoverRadius: 3, // 마우스 호버 시 점 크기 상승
           },
@@ -76,7 +76,7 @@ function initializeChart(labels, dataPoints, mlpDataPoints) {
             data: line1, // 계산된 직선 데이터
             borderColor: 'rgba(255, 99, 132, 1)', // 파란색
             //borderDash: [10, 5], // 점선
-            borderWidth: 3, // 선의 두께
+            borderWidth: 5, // 선의 두께
             tension: 0, // 직선
             pointRadius: 0, // 점을 표시하지 않음
             fill: false,
@@ -86,7 +86,7 @@ function initializeChart(labels, dataPoints, mlpDataPoints) {
             data: line2, // 계산된 직선 데이터
             borderColor: 'rgba(0, 128, 0, 1)', // 초록색
             //borderDash: [10, 5], // 점선
-            borderWidth: 3, // 선의 두께
+            borderWidth: 5, // 선의 두께
             tension: 0, // 직선
             pointRadius: 0, // 점을 표시하지 않음
             fill: false,
@@ -94,10 +94,10 @@ function initializeChart(labels, dataPoints, mlpDataPoints) {
           {
             label: 'Predicted Baseline', // mlp 데이터셋 추가
             data: mlpDataPoints, // mlp 데이터의 danger_score 값
-            borderColor: 'rgba(255, 159, 64, 1)', // 새로운 색상 (오렌지색)
+            borderColor: 'rgba(54, 54, 54, 0.3)', 
             backgroundColor: 'rgba(255, 159, 64, 0.2)',
             tension: 0.4, // 곡선 정도
-            borderWidth: 2,
+            borderWidth: 4,
             pointRadius: 0,
             pointHoverRadius: 3, // 마우스 호버 시 점 크기 상승
           },  
