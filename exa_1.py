@@ -146,8 +146,7 @@ scaler_Y = None
 
 def regression_results():
     global model, scaler_X, scaler_Y
-    df1 = pd.read_csv(CUMULATIVE_DATA_FILE2)
-    df2 = pd.read_csv('test/generated_images/dataset.csv')  #딥러닝 시킬 데이터 경로 직접 따로 추가
+    df2 = pd.read_csv('dataset.csv')  #딥러닝 시킬 데이터 경로 직접 따로 추가
     
     X = np.array(df2['start_time']) 
     Y = np.array(df2['sum_danger_score'])
@@ -174,7 +173,7 @@ def regression_results():
     model.compile(optimizer='adam', loss='mse')
 
     # 모델 학습
-    model.fit(X_train, Y_train, epochs=50, batch_size=32, validation_data=(X_val, Y_val)) 
+    model.fit(X_train, Y_train, epochs=1, batch_size=32, validation_data=(X_val, Y_val)) 
 
 def plot_sum_danger_score_over_time(output_folder): 
     global model, scaler_X, scaler_Y
@@ -199,10 +198,7 @@ def plot_sum_danger_score_over_time(output_folder):
     } for i in range(len(x1))])
 
     file_path = os.path.join(OUTPUT_FOLDER, 'mlp_data.csv')
-    if os.path.exists(file_path):
-        data.to_csv(file_path, mode='a', header=False, index=False, float_format='%.2f')
-    else:
-        data.to_csv(file_path, index=False, float_format='%.2f')
+    data.to_csv(file_path, mode='w', index=False, float_format='%.2f')
 
     # 기존 그래프에 새로운 베이스라인 추가
     plt.plot(df1['start_time'], df1['sum_danger_score'], marker='o', linestyle='-', label='Sum Danger Score')
@@ -251,7 +247,7 @@ def process_url():
     image_path = create_image_from_url(youtube_url)
     
     # 이미지의 URL을 확장 프로그램에 반환
-    # return jsonify({"image_url": f"{image_path}"})
+    return jsonify({"image_url": f"{image_path}"})
 
 def create_image_from_url(url):
     image_filename = "sum_danger_score_plot_with_baseline.png"  # 예시 파일 이름
