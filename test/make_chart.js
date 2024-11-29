@@ -1,10 +1,19 @@
 const csvFilePath = 'generated_images/current_data.csv';
+const mlpCsvFilePath = 'generated_images/mlp_data.csv';
+
 // CSV 데이터를 가져오고 차트를 초기화
-fetch(csvFilePath)
-  .then((response) => response.text())
-  .then((csvData) => {
+Promise.all([
+  fetch(csvFilePath).then((response) => response.text()),
+  fetch(mlpCsvFilePath).then((response) => response.text())
+])
+  .then(([csvData, mlpData]) => {
     // PapaParse로 CSV 데이터를 파싱
     const parsedData = Papa.parse(csvData, {
+      header: true,
+      skipEmptyLines: true,
+    }).data;
+
+    const mlpParsedData = Papa.parse(mlpData, {
       header: true,
       skipEmptyLines: true,
     }).data;
@@ -15,15 +24,19 @@ fetch(csvFilePath)
       parseFloat(row.sum_danger_score)
     );
 
+    const mlpDangerScores = mlpParsedData.map((row) =>
+      parseFloat(row.sum_danger_score) 
+    );
+
     // 차트를 생성
-    initializeChart(labels, sumDangerScores);
+    initializeChart(labels, sumDangerScores, mlpDangerScores);
   })
   .catch((error) => console.error('Error loading CSV data:', error));
 
 // main.html로 들어갈 배경색
 let bgColor = 'white';
 // Chart.js를 설정하는 함수
-function initializeChart(labels, dataPoints) {
+function initializeChart(labels, dataPoints, mlpDataPoints) {
     const ctx = document.getElementById('myChart').getContext('2d');
 
     // X축과 Y축 여유 공간 계산
@@ -56,7 +69,7 @@ function initializeChart(labels, dataPoints) {
             tension: 0.4, // 곡선 정도
             borderWidth: 2,
             pointRadius: 0,
-            pointHoverTadius: 3, // 마우스 호버 시 점 크기 상승
+            pointHoverRadius: 3, // 마우스 호버 시 점 크기 상승
           },
           {
             label: 'Danger_Line', // 고자극 직선
@@ -78,6 +91,16 @@ function initializeChart(labels, dataPoints) {
             pointRadius: 0, // 점을 표시하지 않음
             fill: false,
           },
+          {
+            label: 'Predicted Baseline', // mlp 데이터셋 추가
+            data: mlpDataPoints, // mlp 데이터의 danger_score 값
+            borderColor: 'rgba(255, 159, 64, 1)', // 새로운 색상 (오렌지색)
+            backgroundColor: 'rgba(255, 159, 64, 0.2)',
+            tension: 0.4, // 곡선 정도
+            borderWidth: 2,
+            pointRadius: 0,
+            pointHoverRadius: 3, // 마우스 호버 시 점 크기 상승
+          },  
         ],
       },
       options: {
