@@ -173,7 +173,7 @@ def regression_results():
     model.compile(optimizer='adam', loss='mse')
 
     # 모델 학습
-    model.fit(X_train, Y_train, epochs=1, batch_size=32, validation_data=(X_val, Y_val)) 
+    model.fit(X_train, Y_train, epochs=50, batch_size=32, validation_data=(X_val, Y_val)) 
 
 def plot_sum_danger_score_over_time(output_folder): 
     global model, scaler_X, scaler_Y
