@@ -33,10 +33,10 @@ function initializeChart(labels, dataPoints) {
 
     // 기울기와 절편 설정 (Y = mx + c)
     // 고자극 선
-    const slope1 = (7000 - 0) / 16000; // Y = 7000, X = 14400
+    const slope1 = (7000 - 0) / 14400; // Y = 7000, X = 14400초 4시간 기준
     const intercept1 = 0; // Y절편 (c)
     // 저자극 선
-    const slope2 = (5000 - 0) / 16000; // Y = 5000, X = 14400
+    const slope2 = (5000 - 0) / 14400; // Y = 5000, X = 14400초
     const intercept2 = 0; // Y절편 (c)
 
     // 직선 데이터 계산
@@ -130,9 +130,6 @@ function initializeChart(labels, dataPoints) {
 
             // 각 데이터 포인터 확인
             data.forEach((point, index) => {
-              //const xValue = xScale.getPixelForValue(index); // x좌표
-              //const yValue = yScale.getPixelForValue(point); // y좌표
-
               // 1시간이 지난 후
               if (labels[index] >= 3600) {
                 const dangerValue = dangerLineData[index];
@@ -141,9 +138,9 @@ function initializeChart(labels, dataPoints) {
                 const midValue = (dangerValue + safeValue) / 2;
 
                 // 배경 색상 선택
-                 if (labels[index] >= 14400) { // 4시간 경과시
+                if (labels[index] >= 14400) { // 4시간 경과시
                   bgColor = 'rgba(255, 0, 0, 0.5)';// 빨간색
-                 } else if (point > midValue && point < dangerValue) {
+                } else if (point > midValue && point < dangerValue) {
                   bgColor = 'rgba(255, 255, 0, 0.2)'; // 노란색
                 } else if (point >= dangerValue) {
                   bgColor = 'rgba(255, 0, 0, 0.2)'; // 빨간색

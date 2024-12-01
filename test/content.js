@@ -9,33 +9,33 @@ const serverUrl = 'http://127.0.0.1:5000/get_csv';
 const fileName = 'current_data.csv'; // 서버에 저장된 파일 이름
 
 // 서버에서 CSV 데이터를 불러오는 함수
-  function fetchData() {
-    fetch(`${serverUrl}?file_name=${fileName}`)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        return response.text(); // CSV 데이터를 텍스트로 변환
-      })
-      .then((csvData) => {
-        // PapaParse로 CSV 데이터를 파싱
-        const parsedData = Papa.parse(csvData, {
-          header: true,
-          skipEmptyLines: true,
-        }).data;
+function fetchData() {
+  fetch(`${serverUrl}?file_name=${fileName}`)
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      return response.text(); // CSV 데이터를 텍스트로 변환
+    })
+    .then((csvData) => {
+      // PapaParse로 CSV 데이터를 파싱
+      const parsedData = Papa.parse(csvData, {
+        header: true,
+        skipEmptyLines: true,
+      }).data;
 
-        // start_time과 sum_danger_score 데이터를 추출
-        labels = parsedData.map((row) => row.start_time);
-        sumDangerScores = parsedData.map((row) =>
-          parseFloat(row.sum_danger_score)
-        );
+      // start_time과 sum_danger_score 데이터를 추출
+      labels = parsedData.map((row) => row.start_time);
+      sumDangerScores = parsedData.map((row) =>
+        parseFloat(row.sum_danger_score)
+      );
 
-      })
-      .catch((error) => console.error('Error loading CSV data:', error));
-  }
+    })
+    .catch((error) => console.error('Error loading CSV data:', error));
+}
 
-  // 최초 데이터 가져오기
-  fetchData();
+// 최초 데이터 가져오기
+fetchData();
 // 이벤트 리스너 등록
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -90,6 +90,7 @@ function startObserving() {
                 fetchData();
                 console.log("Detected new URL:", currentUrl);
                 chrome.runtime.sendMessage({ type: "URL_CHANGED", url: currentUrl });
+                // chartCanvas = initializeChart(labels, sumDangerScores);
                 addCustomDiv(chartCanvas);
 
             } catch (error) {
@@ -107,17 +108,18 @@ function startObserving() {
                 }
             }
             else{
-            lastUrl = currentUrl;
-            try {
-                fetchData();
-                console.log("Detected new URL:", currentUrl);
-                chrome.runtime.sendMessage({ type: "URL_CHANGED", url: currentUrl });
-                addCustomDiv(chartCanvas);
+              lastUrl = currentUrl;
+              try {
+                  fetchData();
+                  console.log("Detected new URL:", currentUrl);
+                  chrome.runtime.sendMessage({ type: "URL_CHANGED", url: currentUrl });
+                  // chartCanvas = initializeChart(labels, sumDangerScores);
+                  addCustomDiv(chartCanvas);
 
-            } catch (error) {
-                console.error("Failed to send message:", error);
+              } catch (error) {
+                  console.error("Failed to send message:", error);
+              }
             }
-        }
         }
     });
 

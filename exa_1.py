@@ -13,7 +13,7 @@ import os
 from datetime import datetime
 import signal  # 수정 부분
 import sys     # 수정 부분
-import csv #csv 업로드
+import csv # type: ignore #csv 업로드
 
 app = Flask(__name__)
 CORS(app)
@@ -297,7 +297,7 @@ def get_csv():
     file_path = os.path.join(OUTPUT_FOLDER, file_name)
     if not os.path.exists(file_path):
         return jsonify({"error": "File not found"}), 404
-
+    
     try:
         # CSV 파일을 텍스트로 반환
         return send_file(file_path, mimetype='text/csv')
