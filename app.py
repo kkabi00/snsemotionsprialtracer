@@ -1,3 +1,4 @@
+#non-kiwi ver
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import re
@@ -16,7 +17,8 @@ import sys     # 수정 부분
 app = Flask(__name__)
 CORS(app)
 # 누적 데이터 파일 경로
-CUMULATIVE_DATA_FILE = 'cumulative_data.csv'  # 수정 부분
+CUMULATIVE_DATA_FILE = 'test/generated_images/cumulative_data.csv'  # 수정 부분
+CUMULATIVE_DATA_FILE2 = 'test/generated_images/current_data.csv'    # 수정 부분
 # 이미지 폴더 설정
 OUTPUT_FOLDER = "test/generated_images"
 if not os.path.exists(OUTPUT_FOLDER):
@@ -45,7 +47,7 @@ def fetch_youtube_script_with_time(video_id):
     """YouTube 비디오 ID로부터 자막 데이터 및 시간 조회."""
     try:
         transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['ko'])
-        return [{'start': item['start'], 'text': item['text']} for item in transcript]
+        return [{'start': item['start'], 'duration': item['duration'], 'text': item['text']} for item in transcript]
     except Exception as e:
         print(f"Error fetching transcript: {e}")
         return None
@@ -61,15 +63,16 @@ def emotion_analysis(text):
 
 def split_into_sentences(text):
     """Kiwi 사용, 텍스트를 문장 단위로 분리"""
-    kiwi = Kiwi()
-    sentences = [sentence.text for sentence in kiwi.split_into_sents(text)] # type: ignore
+    # kiwi = Kiwi()
+    # sentences = [sentence.text for sentence in kiwi.split_into_sents(text)] # type: ignore
+    sentences = text.split(',')
     return sentences
 
-def aggregate_emotion_scores(results):
+def aggregate_emotion_scores(results): 
     """감정 분석 결과 문장 단위로 합산, 0.5 이상인 감정의 over_half_score 필드 처리"""
     #최종 결과에 over_half_score 필드 더이상 불필요하므로 제거
     emotion_scores = {}
-    over_half_scores = {}
+    # over_half_scores = {} # 수정 부분
 
     for result in results:
         emotion = result['entity_group']
@@ -79,10 +82,10 @@ def aggregate_emotion_scores(results):
         else:
             emotion_scores[emotion] = score
 
-    for emotion, score in emotion_scores.items():
-        over_half_scores[emotion] = 1 if score >= 0.5 else 0
+    # for emotion, score in emotion_scores.items(): # 수정 부분
+    #     over_half_scores[emotion] = 1 if score >= 0.5 else 0  # 수정 부분
 
-    return emotion_scores, over_half_scores
+    return emotion_scores
 
 def get_output_folder(user_name):
     """사용자 이름과 현재 날짜 기준, 출력 폴더 생성"""
@@ -102,6 +105,13 @@ def load_cumulative_data():
     else:
         print("데이터 파일 없음")
         return 0, 0
+    
+def save_current_data(df): # 수정 부분
+    file_path = os.path.join(OUTPUT_FOLDER, 'current_data.csv')
+    if os.path.exists(file_path):
+        df.to_csv(file_path, mode='a', header=False, index=False)
+    else:
+        df.to_csv(file_path, index=False)
 
 def save_cumulative_data(sum_danger_score, elapsed_time, video_id, output_folder, addiction_rate = 0):
     """현재 비디오의 누적 데이터 update"""
@@ -111,31 +121,38 @@ def save_cumulative_data(sum_danger_score, elapsed_time, video_id, output_folder
 
     data = pd.DataFrame([{
         'video_id': video_id,
-        'sum_danger_score': sum_danger_score,
-        'elapsed_time': total_elapsed_time,
+        'sum_danger_score': round(sum_danger_score, 2),  # 수정 부분
+        'elapsed_time': round(total_elapsed_time, 2),    # 수정 부분
         'addiction_rate': f"{addiction_rate_percentage:.2f}%"
     }])
 
     file_path = os.path.join(output_folder, 'cumulative_data.csv')
     if os.path.exists(file_path):
-        print("저장완")
         data.to_csv(file_path, mode='a', header=False, index=False)
     else:
-        print("저장실패")
         data.to_csv(file_path, index=False)
 
-def plot_sum_danger_score_over_time(df, output_folder):
+def plot_sum_danger_score_over_time(output_folder): # 수정 부분
     """시간에 따른 sum_danger_score를 시각화, 증가율이 1인 기준선 전경 추가"""
     plt.figure(figsize=(12, 6))
-    
+    df1 = pd.read_csv(CUMULATIVE_DATA_FILE)
+    df2 = pd.read_csv(CUMULATIVE_DATA_FILE2)
     # 누적된 sum_danger_score 그래프
-    plt.plot(df['start_time'].cumsum(), df['sum_danger_score'], marker='o', linestyle='-', label='Sum Danger Score')
+    plt.plot(df2['start_time'], df2['sum_danger_score'], marker='o', linestyle='-', label='Sum Danger Score')
     
     # 기준선 (증가율이 1, 시작점은 첫 영상의 시작 sum danger score)
-    start_score = df['sum_danger_score'].iloc[0]  # 첫 sum danger score 값을 기준으로 설정
-    base_line = [start_score + i for i in range(len(df))]  # 증가율이 1인 선형 기준선
-    plt.plot(df['start_time'].cumsum(), base_line, linestyle='--', color='red', label='Baseline (1 per step)')
+    start_score = df2['sum_danger_score'].iloc[0]  # 첫 sum danger score 값을 기준으로 설정
+    base_line = [start_score + i for i in range(len(df2))]  # 증가율이 1인 선형 기준선
+    plt.plot(df2['start_time'], base_line, linestyle='--', color='red', label='Baseline (1 per step)')
     
+    # x축과 y축의 범위 고정
+    # plt.xlim(left=0, right=15000)  # x축 범위 (0에서 15000까지 고정)
+    # plt.ylim(bottom=0, top=4000)  # y축 범위 (0에서 4000까지 고정)
+
+    # x축과 y축의 동적 할당(wonderful)
+    plt.xlim(left=0, right=df1['elapsed_time'].iloc[-1]+300)
+    plt.ylim(bottom=0, top=df1['sum_danger_score'].iloc[-1]+300)
+
     # 그래프 설정
     plt.title('Sum Danger Score Over Elapsed Time with Baseline')
     plt.xlabel('Elapsed Time (s)')
@@ -145,7 +162,7 @@ def plot_sum_danger_score_over_time(df, output_folder):
     plt.tight_layout()
     
     # 이미지 저장
-    image_path = os.path.join(output_folder, 'sum_danger_score_plot_with_baseline.png')
+    image_path = os.path.join(output_folder, 'test.png')
     plt.savefig(image_path)
     plt.close()
     print(f"Plot saved to {image_path}")
@@ -165,7 +182,7 @@ def format_time_in_minutes_and_seconds(time_in_minutes):
     seconds = int((time_in_minutes - minutes) * 60)
     return f"{minutes}분 {seconds}초"
 
-@app.route('/', methods=['POST']) # type: ignore
+@app.route('/', methods=['POST'])
 def process_url():
     data = request.get_json()
     youtube_url = data.get("url")
@@ -174,13 +191,9 @@ def process_url():
     image_path = create_image_from_url(youtube_url)
     
     # 이미지의 URL을 확장 프로그램에 반환
-    if image_path is None:
-        print("process_url() 종료")
-    else :
-        # 이미지의 URL을 확장 프로그램에 반환
-        return jsonify({"image_url": f"{image_path}"})
+    return jsonify({"image_url": f"{image_path}"})
 
-def create_image_from_url(url):  # 수정 부분
+def create_image_from_url(url):
     image_filename = "sum_danger_score_plot_with_baseline.png"  # 예시 파일 이름
     image_path = os.path.join(OUTPUT_FOLDER, image_filename)
     #output_folder = get_output_folder("user_name")
@@ -199,26 +212,33 @@ def create_image_from_url(url):  # 수정 부분
 
     transcript = fetch_youtube_script_with_time(video_id)
     if transcript:
-        sentences = split_into_sentences(' '.join([item['text'] for item in transcript]))
+        sentences = ([item['text'] for item in transcript])
 
+        if os.path.exists(CUMULATIVE_DATA_FILE2): # 수정 부분
+            df2 = pd.read_csv(CUMULATIVE_DATA_FILE2) 
+            last_start_time = df2['start_time'].iloc[-1]
+        else:
+            last_start_time = 0
+    
         analysis_data = []
         for i, sentence in enumerate(sentences):
-            print(f"\nAnalyzing sentence: {sentence}")
-            start_time = transcript[i]['start']  # 초 단위
-            start_time_in_seconds = round(start_time, 2) 
+            
+            print(f"\nAnalyzing text: {sentence}")
+            
+            start_time_in_seconds = last_start_time + transcript[i]['start'] # 수정 부분
 
             # 감정 분석 수행
             results = emotion_analysis(sentence)
 
-            aggregated_scores, over_half_scores = aggregate_emotion_scores(results)
+            aggregated_scores = aggregate_emotion_scores(results) # 수정 부분
             sentence_danger_score = sum(
                 risk_scores.get(emotion, 1.0) for emotion, score in aggregated_scores.items() if score >= 0.5
             )
             cumulative_sum_danger_score += sentence_danger_score
 
-            analysis_data.append({
-                'start_time': start_time_in_seconds,
-                'sentence': sentence,
+            analysis_data.append({ 
+                'start_time': round(start_time_in_seconds, 2), # 수정 부분
+                'sentences': sentence,
                 'emotions': ', '.join(aggregated_scores.keys()),
                 'scores': ', '.join([f"{score:.2f}" for score in aggregated_scores.values()]),
                 'sentence_danger_score': round(sentence_danger_score, 2),
@@ -228,26 +248,34 @@ def create_image_from_url(url):  # 수정 부분
         # 총 비디오 시청 시간은 마지막 문장의 start_time + 해당 문장의 길이
         last_sentence_start_time = transcript[-1]['start']  # 초 단위
         last_sentence_length_estimate = len(transcript[-1]['text']) / 100  # 문장의 길이를 시간으로 변환 (추정치) 
-        video_total_time = last_sentence_start_time + last_sentence_length_estimate  # 초 단위
+        video_total_time = last_sentence_start_time + last_sentence_length_estimate  # 초 단위 
+        
+        # 추가
+        # total_sentences = len(transcript)
+        # for i, sentence in enumerate(analysis_data):
+        # # 각 문장의 시작 시간을 비디오 시간에 맞게 균등 분배
+        # start_time_in_seconds = (video_total_time / total_sentences) * (i + 1)
+        # sentence['start_time'] = round(start_time_in_seconds, 2)
+        
+        df_analysis = pd.DataFrame(analysis_data)
+        save_current_data(df_analysis) # 수정 부분
+        save_cumulative_data(cumulative_sum_danger_score, video_total_time, video_id, OUTPUT_FOLDER)
+        plot_sum_danger_score_over_time(OUTPUT_FOLDER)
+        #save_to_excel(analysis_data, video_id, OUTPUT_FOLDER)
 
         # 누적 시청 시간 업데이트 (분 단위로 변환)
-        cumulative_elapsed_time = (cumulative_elapsed_time + video_total_time) / 60  # 초 -> 분   # 수정 부분
-
-        df_analysis = pd.DataFrame(analysis_data)
-        plot_sum_danger_score_over_time(df_analysis, OUTPUT_FOLDER)
-        save_cumulative_data(cumulative_sum_danger_score, video_total_time, video_id, OUTPUT_FOLDER)
-        #save_to_excel(analysis_data, video_id, OUTPUT_FOLDER)
+        cumulative_elapsed_time = (cumulative_elapsed_time + video_total_time) / 60  # 초 -> 분
 
         # 누적 시청 시간을 분 초 형태로 포맷팅하여 출력
         formatted_time = format_time_in_minutes_and_seconds(cumulative_elapsed_time)
         print(f"\n누적 시청 시간: {formatted_time}") #오류 다소 있음
-        print(f"누적 위험 지수: {cumulative_sum_danger_score}")
+        print(f"누적 위험 지수: {round(cumulative_sum_danger_score, 2)}")
         return f"{OUTPUT_FOLDER}/{image_filename}"
     else:
         print("이 비디오에는 자막이 없습니다.")
         return None
     
-def signal_handler(sig, frame):  # 수정 부분
+def signal_handler(sig, frame):  
     print("프로그램 종료 중...")
     sys.exit(0)    
 
@@ -257,5 +285,5 @@ def serve_image(filename):
     return send_file(os.path.join(OUTPUT_FOLDER, filename), mimetype='image/png')
 # 서버 실행
 if __name__ == '__main__':
-    signal.signal(signal.SIGINT, signal_handler)  # 수정 부분
-    app.run(debug=True, use_reloader=False)  # 수정 부분
+    signal.signal(signal.SIGINT, signal_handler)  
+    app.run(debug=True, use_reloader=False)  
