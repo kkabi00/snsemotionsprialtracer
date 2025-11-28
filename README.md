@@ -1,4 +1,4 @@
-SNS Emotion Sprial Tracer
+SNS Emotion Sprial Tracer( 최종 최우수 프로젝트 선정)
 
 - pip 설치 목록 
   <br/>pip install flask
